@@ -49,20 +49,19 @@ type Context struct {
 1. Clonar el repositorio
 
 ```sh
-git clone https://github.gsissc.myatos.net/GLB-BDS-ETSN-IMET/COLMENA.git
-cd context-awareness-manager-svc
+git clone https://github.com/eviden-colmena/colmena-eviden.git
 ```
 
 2. Construir la imagen Docker
 
 ```sh
-docker build -t registry.atosresearch.eu:18512/context-awareness-manager -f context-awareness-manager-svc/Dockerfile .
+docker build -t registry.atosresearch.eu:18512/context-awareness-manager -f components/context-awareness-manager/build/Dockerfile .
 ```
 
 3. Ejecutar el contenedor Docker
 
 ```sh
-docker compose -f cicd/compose/docker-compose.yaml up -d context-awareness-manager
+docker compose -f install/compose/docker-compose.yaml up -d context-awareness-manager
 ```
 
 4. Acceder a la aplicación
@@ -91,7 +90,26 @@ sqlite> .exit
 ```
 
 ### Ejemplo de Solicitudes
-# Enviar un contexto:
+
+- **Endpoint**: `POST /context`
+- **Request Body**:
+
+```json
+{
+    "id": {
+        "value": "ExampleApplication"
+    },
+    "dockerContextDefinitions": [
+        {
+            "id": "company_premises",
+            "imageId": "xaviercasasbsc/company_premises"
+        }
+    ],
+    "kpis": [],
+    "dockerRoleDefinitions": []
+}
+```
+- **Example Curl Commmand**
 ```sh
 curl -X POST http://localhost:8080/context -H "Content-Type: application/json" -d '{
     "id": {
@@ -128,3 +146,24 @@ curl -X POST http://localhost:8080/context -H "Content-Type: application/json" -
     ]
 }'
 ```
+
+## Generating Swagger Documentation
+To generate the Swagger documentation, annotate the controller methods and run the following command in the root project folder:
+
+```bash
+swag init -g cmd/context-awareness-manager/main.go -o docs
+```
+This command will create the Swagger documentation in the docs folder.
+
+## Running Test
+
+To run unit tests:
+
+```sh
+go test ./..
+```
+
+## License
+The Container Engine is released under the Apache 2.0 license.
+Copyright © 2022-2024 Eviden. All rights reserved.
+See the [LICENSE](LICENSE) file for more information.

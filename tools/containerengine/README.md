@@ -1,4 +1,6 @@
-# Docker Client Module
+# Container Engine
+
+## Description
 
 This module provides a function to deploy a Docker container by making an HTTP POST request to a microservice. The microservice deploys the container using the specified image and an optional command (`cmd`). The logs of the container are returned as a response.
 
@@ -26,6 +28,30 @@ Import the module and use the deployContainer function to deploy a Docker contai
 
 #### Deploy a Container
 
+1. Clonar el repositorio
+
+```sh
+git clone https://github.com/eviden-colmena/colmena-eviden.git
+```
+
+2. Construir la imagen Docker
+
+```sh
+docker build -t registry.atosresearch.eu:18512/containerengine -f tools/containerengine/build/Dockerfile .
+```
+
+3. Ejecutar el contenedor Docker
+
+```sh
+docker compose -f install/compose/docker-compose.yaml up -d containerengine
+```
+
+4. Acceder a la aplicación
+
+Abre tu navegador y visita http://localhost:8080.
+
+### Ejemplo de Solicitudes
+
 - **Endpoint**: `POST /deploy`
 - **Request Body**:
 
@@ -40,7 +66,7 @@ Import the module and use the deployContainer function to deploy a Docker contai
   "classification": "reception"
 }
 ```
-** Example Curl Commmand**
+- **Example Curl Commmand**
 ```sh
 curl -X POST http://localhost:8000/deploy \
     -H "Content-Type: application/json" \ 
