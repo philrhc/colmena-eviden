@@ -9,7 +9,6 @@
 
 # Archivos compilados
 /bin
-/build
 
 # Dependencias del proyecto
 /vendor/
