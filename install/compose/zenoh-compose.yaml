@@ -1,0 +1,13 @@
+services:
+  zenoh:
+    container_name: zenoh
+    image: eclipse/zenoh:0.11.0
+    restart: unless-stopped
+    ports:
+      - 7447:7447
+      - 8000:8000
+    environment:
+      RUST_LOG: "debug"
+    volumes:
+      - ../../tools/zenoh/zenoh_config.json5:/zenoh_config.json5:ro
+    command: -c /zenoh_config.json5
