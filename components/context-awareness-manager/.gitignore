@@ -1,0 +1,33 @@
+# Archivos binarios generados por Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Archivos compilados
+/bin
+
+# Dependencias del proyecto
+/vendor/
+
+# Archivos generados por el sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuraciones del IDE/editor
+.idea/
+.vscode/
+*.swp
+
+# Archivos temporales de compilación
+*.log
+*.tmp
+
+# Directorios específicos de trabajo
+/tmp
+
+# Python virtual env
+.venv/

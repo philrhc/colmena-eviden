@@ -1,0 +1,47 @@
+definitions:
+  models.DeployRequest:
+    properties:
+      cmd:
+        items:
+          type: string
+        type: array
+      image:
+        type: string
+    type: object
+  models.DeployResponse:
+    properties:
+      classification:
+        type: string
+      error:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /deploy:
+    post:
+      consumes:
+      - application/json
+      description: Deploys a container using the specified image and command
+      parameters:
+      - description: Request payload for deploying a container
+        in: body
+        name: deployRequest
+        required: true
+        schema:
+          $ref: '#/definitions/models.DeployRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.DeployResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.DeployResponse'
+      summary: Deploy a Docker container
+      tags:
+      - deploy
+swagger: "2.0"

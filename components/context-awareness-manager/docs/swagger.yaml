@@ -1,0 +1,135 @@
+basePath: /
+definitions:
+  models.Context:
+    properties:
+      dockerContextDefinitions:
+        items:
+          $ref: '#/definitions/models.DockerContextDefinition'
+        type: array
+      dockerRoleDefinitions:
+        items:
+          $ref: '#/definitions/models.DockerRoleDefinition'
+        type: array
+      id:
+        $ref: '#/definitions/models.ID'
+      kpis:
+        items:
+          $ref: '#/definitions/models.KPI'
+        type: array
+    type: object
+  models.DockerContextDefinition:
+    properties:
+      id:
+        type: string
+      imageId:
+        type: string
+    type: object
+  models.DockerRoleDefinition:
+    properties:
+      hardwareRequirements:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      imageId:
+        type: string
+      kpis:
+        items:
+          $ref: '#/definitions/models.KPI'
+        type: array
+    type: object
+  models.ID:
+    properties:
+      value:
+        type: string
+    type: object
+  models.KPI:
+    properties:
+      value:
+        type: string
+    type: object
+  models.Result:
+    properties:
+      classification:
+        type: string
+      id:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the Context Awareness Manager service API for Docker context
+    management.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0
+  termsOfService: http://swagger.io/terms/
+  title: Context Awareness Manager API
+  version: "1.0"
+paths:
+  /:
+    get:
+      description: Returns a welcome message
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Welcome
+          schema:
+            type: string
+      summary: Main welcome route
+      tags:
+      - General
+  /context:
+    post:
+      consumes:
+      - application/json
+      description: Endpoint to receive and process Docker context
+      parameters:
+      - description: Context to process
+        in: body
+        name: context
+        required: true
+        schema:
+          $ref: '#/definitions/models.Context'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Context processed successfully
+          schema:
+            $ref: '#/definitions/models.Result'
+        "400":
+          description: Invalid context
+          schema:
+            type: string
+      summary: Receive context
+      tags:
+      - Context
+  /health:
+    get:
+      description: Checks if the service is up and responding.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Check API health
+      tags:
+      - Health
+securityDefinitions:
+  Bearer:
+    description: '"Type ''Bearer TOKEN'' to correctly set the API Key"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
