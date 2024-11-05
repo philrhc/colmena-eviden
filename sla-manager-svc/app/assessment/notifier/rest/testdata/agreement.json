@@ -1,0 +1,12 @@
+{
+    "id": "d01",
+    "name": "qos-definition-name",
+    "details": {
+        "guarantees": [
+            {
+                "name": "example_1",
+                "constraint": "go_goroutines < 20"
+            }
+        ]
+    }
+}

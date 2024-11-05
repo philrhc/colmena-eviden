@@ -1,0 +1,68 @@
+version: "3.3"
+services:
+  # zenoh
+  zenoh:
+    container_name: zenoh
+    image: eclipse/zenoh:0.11.0
+    restart: always
+    ports:
+      - 7447:7447
+      - 8000:8000
+    environment:
+      RUST_LOG: "debug"
+    volumes:
+      - ./zenoh/zenoh_config.json5:/zenoh_config.json5:ro
+    command: -c /zenoh_config.json5
+
+  # prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    restart: always
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
+
+  # pyconn
+  pyconn:
+    container_name: pyconn
+    image: zenoh-prometheus-conn:latest
+    restart: always
+    ports:
+      - 8999:8999
+  
+  # node-exporter
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:latest
+    restart: always
+    ports:
+      - 9100:9100
+
+  # grafana
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
+
+  # sla-manager
+  sla-manager:
+    container_name: sla-manager
+    image: sla-manager:latest
+    restart: always
+    ports:
+      - 8081:8080
+      - 8099:8099
+    environment:
+      PROMETHEUS_ADDRESS: "http://prometheus:9090"
+      MONITORING_ADAPTER: "prometheus"
+      GRPC_PORT: "8099"
+    depends_on:
+      - prometheus

@@ -1,0 +1,12 @@
+{
+    "id": "d02",
+    "name": "qos-definition-name",
+    "details": {
+        "guarantees": [
+            {
+                "name": "example_2",
+                "constraint": "buffer_queue_size[100000000s] < 10"
+            }
+        ]
+    }
+}
