@@ -57,65 +57,69 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
+// TestHandleContext tests the DeployHandler using monkey patching
 func TestHandleContext(t *testing.T) {
-	// Create a new in-memory SQLite database for testing
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		t.Fatalf("Could not open database: %v", err)
-	}
-	defer db.Close()
+	// Test case: Valid request
+	t.Run("Valid request", func(t *testing.T) {
+		// Create a new in-memory SQLite database for testing
+		db, err := sql.Open("sqlite3", ":memory:")
+		if err != nil {
+			t.Fatalf("Could not open database: %v", err)
+		}
+		defer db.Close()
 
-	// Create the tables
-	_, err = db.Exec(`CREATE TABLE dockerContextDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
-	if err != nil {
-		t.Fatalf("Could not create table: %v", err)
-	}
-	_, err = db.Exec(`CREATE TABLE dockerRoleDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
-	if err != nil {
-		t.Fatalf("Could not create table: %v", err)
-	}
+		// Create the tables
+		_, err = db.Exec(`CREATE TABLE dockerContextDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
+		if err != nil {
+			t.Fatalf("Could not create table: %v", err)
+		}
+		_, err = db.Exec(`CREATE TABLE dockerRoleDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
+		if err != nil {
+			t.Fatalf("Could not create table: %v", err)
+		}
 
-	// Define a valid context based on the provided JSON
-	ctx := models.ServiceDescription{
-		ID: models.ID{Value: "ExampleApplication"},
-		DockerContextDefinitions: []models.DockerContextDefinition{
-			{ID: "company_premises", ImageID: "xaviercasasbsc/company_premises"},
-		},
-		KPIs:                  []models.KPI{},
-		DockerRoleDefinitions: []models.DockerRoleDefinition{},
-	}
+		// Define a valid context based on the provided JSON
+		ctx := models.ServiceDescription{
+			ID: models.ID{Value: "ExampleApplication"},
+			DockerContextDefinitions: []models.DockerContextDefinition{
+				{ID: "company_premises", ImageID: "xaviercasasbsc/company_premises"},
+			},
+			KPIs:                  []models.KPI{},
+			DockerRoleDefinitions: []models.DockerRoleDefinition{},
+		}
 
-	// Marshal the context to JSON
-	jsonData, err := json.Marshal(ctx)
-	if err != nil {
-		t.Fatalf("Could not marshal context: %v", err)
-	}
+		// Marshal the context to JSON
+		jsonData, err := json.Marshal(ctx)
+		if err != nil {
+			t.Fatalf("Could not marshal context: %v", err)
+		}
 
-	req, err := http.NewRequest("POST", "/context", bytes.NewBuffer(jsonData))
-	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
+		req, err := http.NewRequest("POST", "/context", bytes.NewBuffer(jsonData))
+		if err != nil {
+			t.Fatalf("Could not create request: %v", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	// Create a ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
+		// Create a ResponseRecorder to record the response
+		rr := httptest.NewRecorder()
 
-	// Mock the DeployContainer function using monkey patching
-	monkey.Patch(monitor.DeployContainer, func(imageID string, cmd []string) (string, error) {
-		return "classification", nil
+		// Mock the DeployContainer function using monkey patching
+		monkey.Patch(monitor.DeployContainer, func(imageID string, cmd []string) (string, error) {
+			return "classification", nil
+		})
+		defer monkey.UnpatchAll() // Ensure to restore the original function after the test
+
+		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			HandleContext(w, r, db)
+		})
+
+		handler.ServeHTTP(rr, req)
+
+		// Check the status code
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		// Check the response body
+		expected := `Context received: {ID:{Value:ExampleApplication} DockerContextDefinitions:[{ID:company_premises ImageID:xaviercasasbsc/company_premises}] KPIs:[] DockerRoleDefinitions:[]}` + "\n"
+		assert.Equal(t, expected, rr.Body.String())
 	})
-	defer monkey.UnpatchAll() // Ensure to restore the original function after the test
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		HandleContext(w, r, db)
-	})
-
-	handler.ServeHTTP(rr, req)
-
-	// Check the status code
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	// Check the response body
-	expected := `Context received: {ID:{Value:ExampleApplication} DockerContextDefinitions:[{ID:company_premises ImageID:xaviercasasbsc/company_premises}] KPIs:[] DockerRoleDefinitions:[]}` + "\n"
-	assert.Equal(t, expected, rr.Body.String())
 }

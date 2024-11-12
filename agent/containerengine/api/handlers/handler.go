@@ -20,6 +20,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"containerengine/internal/dockerclient"
@@ -55,4 +56,16 @@ func DeployHandler(cli *client.Client, w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// HealthHandler checks if the service is up and running.
+// @Summary Check API health
+// @Description Checks if the service is up and responding.
+// @Tags Health
+// @Produce text/plain
+// @Success 200 {string} string "OK"
+// @Router /health [get]
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "Container Engine API is running. Publish new deployment to /deploy path")
 }

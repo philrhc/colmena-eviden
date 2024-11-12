@@ -120,7 +120,7 @@ func PublishContext(key string, value string) error {
 	// Construct the URL using the provided key
 	zenohURL := os.Getenv("ZENOH_URL")
 	if zenohURL == "" {
-		zenohURL = "http://zenoh:8000"
+		zenohURL = "http://zenoh-router:8000"
 	}
 	url := fmt.Sprintf("%s/%s", zenohURL, key)
 

@@ -37,7 +37,7 @@ git clone https://github.com/eviden-colmena/colmena-eviden.git
 2. Construir la imagen Docker
 
 ```sh
-docker build -t registry.atosresearch.eu:18512/containerengine -f tools/containerengine/build/Dockerfile .
+docker build -t registry.atosresearch.eu:18512/containerengine -f agent/containerengine/build/Dockerfile .
 ```
 
 3. Ejecutar el contenedor Docker

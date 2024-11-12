@@ -43,6 +43,7 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
 	r.HandleFunc("/deploy", func(w http.ResponseWriter, r *http.Request) {
 		handlers.DeployHandler(cli, w, r)
 	}).Methods("POST")

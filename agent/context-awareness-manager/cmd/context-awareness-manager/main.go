@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	_ "context-awareness-manager/docs"
@@ -114,11 +115,17 @@ func main() {
 		}
 	}()
 
+	// Get context key expression prefix
+	keyExpression_prefix := os.Getenv("CONTEXT_KEY")
+	if keyExpression_prefix == "" {
+		keyExpression_prefix = "dockerContextDefinitions"
+	}
+
 	go func() {
 		// Listen for changes and print them
 		for result := range resultChannel {
 			fmt.Printf("Context has changed: %s\n", result.Classification)
-			keyExpression := fmt.Sprintf("dockerContextDefinitions/%s", result.ID)
+			keyExpression := fmt.Sprintf("%s/%s", keyExpression_prefix, result.ID)
 			err := monitor.PublishContext(keyExpression, result.Classification)
 			if err != nil {
 				fmt.Println("Error publishing context:", err)

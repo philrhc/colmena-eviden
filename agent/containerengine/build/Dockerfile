@@ -10,13 +10,13 @@ FROM golang:alpine AS builder
 WORKDIR /go/src
 
 # Copy go mod and sum files 
-COPY tools/containerengine ./
+COPY agent/containerengine ./
 
 # Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
 RUN go mod download
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -o main cmd/containerengine
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/containerengine
 
 # Start a new stage from scratch
 FROM alpine:3.17
