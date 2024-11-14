@@ -55,7 +55,7 @@ git clone https://github.com/eviden-colmena/colmena-eviden.git
 2. Construir la imagen Docker
 
 ```sh
-docker build -t registry.atosresearch.eu:18512/context-awareness-manager -f agent/context-awareness-manager/build/Dockerfile .
+docker build -t jrubioc0/context-awareness-manager -f agent/context-awareness-manager/build/Dockerfile .
 ```
 
 3. Ejecutar el contenedor Docker
