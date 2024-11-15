@@ -2,16 +2,46 @@
 
 ## Description
 
-This module provides a function to deploy a Docker container by making an HTTP POST request to a microservice. The microservice deploys the container using the specified image and an optional command (`cmd`). The logs of the container are returned as a response.
+COLMENA Container Engine module belong to Context Awareness Component. This submodule provides a function to deploy a Docker container by making an HTTP POST request to a microservice. The microservice deploys the container using the specified image and an optional command (`cmd`). The logs of the container are returned as a response.
 
 ## Table of Contents
 
 - [Installation](#installation)
 - [API Usage](#api-usage)
-- [Deploy a Container](#deploy-a-container)
-- [Generating Swagger Documentation](#generating-swagger-documentation)
+- [Swagger Documentation](#swagger-documentation)
 - [Running Test](#running-test)
 - [License](#license)
+
+## Project Structure
+
+### Receiver
+
+This submodule manages the reception of HTTP requests and processes the received contexts.
+
+- **File**: [handler.go](components/containerengine/api/handlers/handler.go)
+
+- **Endpoints**:
+  - **POST /deploy**: This endpoint receives a new context image.
+  - **GET /health**: This endpoint provides a simple health check.
+
+### DockerClient
+
+This module provides functionality to deploy Docker containers, execute commands within them, and retrieve their logs. It interacts with Docker's API to manage containers in a programmatic manner, ensuring easy deployment and log collection.
+
+- **File**: [dockerclient.go](components/containerengine/internal/dockerclient/dockerclient.go)
+
+### Models
+
+The context managed within this module is defined in [models.go](components/containerengine/internal/models/models.go) and has the following structure:
+
+```go
+package models 
+
+type DeployRequest struct {
+    Image string   `json:"image"`
+    Cmd   []string `json:"cmd,omitempty"`
+}
+```
 
 ## Installation
 
@@ -22,35 +52,33 @@ go mod init containerengine
 go mod tidy
 ```
 
-## API usage
+### Deploy a Container
 
-Import the module and use the deployContainer function to deploy a Docker container. You need to specify the Docker image and optionally a command (cmd) to run inside the container. If cmd is omitted, the default command of the image will be used.
-
-#### Deploy a Container
-
-1. Clonar el repositorio
+1. Clone the repository
 
 ```sh
 git clone https://github.com/eviden-colmena/colmena-eviden.git
 ```
 
-2. Construir la imagen Docker
+2. Build the Docker image
 
 ```sh
-docker build -t registry.atosresearch.eu:18512/containerengine -f agent/containerengine/build/Dockerfile .
+docker build -t jrubioc0/containerengine -f components/containerengine/build/Dockerfile .
 ```
 
-3. Ejecutar el contenedor Docker
+3. Run the Docker container
 
 ```sh
 docker compose -f install/compose/docker-compose.yaml up -d containerengine
 ```
 
-4. Acceder a la aplicación
+4. Access the application
 
-Abre tu navegador y visita http://localhost:8080.
+Open your browser and go to http://localhost:8080/health
 
-### Ejemplo de Solicitudes
+## API usage
+
+### Sample Requests
 
 - **Endpoint**: `POST /deploy`
 - **Request Body**:
@@ -73,7 +101,7 @@ curl -X POST http://localhost:8000/deploy \
     -d '{"image": "xaviercasasbsc/company_premises:latest"}'
 ```
 
-## Generating Swagger Documentation
+## Swagger Documentation
 To generate the Swagger documentation, annotate the controller methods and run the following command in the root project folder:
 
 ```bash

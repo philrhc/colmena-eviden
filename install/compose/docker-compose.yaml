@@ -1,7 +1,7 @@
 services:
   containerengine:
     container_name: containerengine
-    image: jrubioc0/containerengine
+    image: jrubioc0/containerengine:develop
     restart: always
     ports:
       - 9000:9000
@@ -12,7 +12,7 @@ services:
 
   context-awareness:
     container_name: context-awareness
-    image: jrubioc0/context-awareness
+    image: jrubioc0/context-awareness:develop
     restart: always
     ports:
       - 8080:8080
@@ -25,7 +25,7 @@ services:
     container_name: prometheus
     image: prom/prometheus
     volumes:
-      - ../../tools/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ../../components/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
@@ -61,7 +61,7 @@ services:
     environment:
       RUST_LOG: "debug"
     volumes:
-      - ../../tools/zenoh/zenoh_config.json5:/zenoh_config.json5:ro
+      - ../../components/zenoh-router/zenoh_config.json5:/zenoh_config.json5:ro
     command: -c /zenoh_config.json5
 
   pyconn:
@@ -70,7 +70,3 @@ services:
     restart: always
     ports:
       - 8999:8999
-      
-  colmena-role:
-    container_name: colmena-role
-    image: prhcatbsc/test_contextpublisher

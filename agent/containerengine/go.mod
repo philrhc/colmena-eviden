@@ -6,6 +6,7 @@ require (
 	bou.ke/monkey v1.0.2
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/gorilla/mux v1.8.1
+	github.com/moby/moby v27.3.1+incompatible
 	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/swag v1.16.4
 )

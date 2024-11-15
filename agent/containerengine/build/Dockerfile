@@ -10,7 +10,7 @@ FROM golang:alpine AS builder
 WORKDIR /go/src
 
 # Copy go mod and sum files 
-COPY agent/containerengine ./
+COPY components/containerengine ./
 
 # Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
 RUN go mod download

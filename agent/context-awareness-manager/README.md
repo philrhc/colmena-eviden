@@ -2,36 +2,42 @@
 
 ## Descripción
 
-El módulo Gestor de Conciencia de Contexto es una aplicación desarrollada en Go que se encarga de recibir, procesar y distribuir contextos a través de diferentes submódulos. Este módulo proporciona una API REST para recibir contextos, envía notificaciones cuando un nuevo contexto es recibido y publica estos contextos a los suscriptores de la red Zenoh para que puedan consumirlos.
+COLMENA Context Awareness Manager module handles the receipt, processing, and distribution of context for the service it want to be deployed. This module provides a REST API to receive contexts, sends notifications when a new context is received, and publishes these contexts to distributed network subscribers for further consumption.
 
-## Submódulos
+## Table of Contents
 
-### Context
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [API Usage](#api-usage)
+- [Swagger Documentation](#swagger-documentation)
+- [Running Test](#running-test)
+- [License](#license)
 
-Submódulo que maneja la lógica del contexto.
-
-- **Archivo**: [main.go](context-awareness-manager-svc/main.go)
-
-- **Endpoints**:
-  - **PUT /context**: Este endpoint recibe un contexto nuevo.
-  - **GET /health**: Este endpoint proporciona una verificación de estado simple.
-  - **GET /**: Este endpoint proporciona un mensaje de bienvenida.
+## Project Structure
 
 ### Receiver
 
-Submódulo que gestiona la recepción de la petición HTTP y procesa el contexto recibido.
+This submodule manages the reception of HTTP requests and processes the received contexts.
 
-- **Archivo**: [receiver/handler.go](context-awareness-manager-svc/src/receiver/handler.go)
+- **File**: [handler.go](components/context-awareness-manager/api/handlers/handler.go)
+
+- **Endpoints**:
+  - **POST /context**: This endpoint receives a new context.
+  - **GET /health**: This endpoint provides a simple health check.
 
 ### Monitor
 
-Submódulo que interactua con los microservicios encargados de obtener el contexto y la red Zenoh mediante publicaciones HTTP POST cuando se recibe un nuevo contexto.
+This submodule monitoring context values and interacts with others microservices to receive this information and notify to al distributed modules of the system.responsible for obtaining context value and with the distributed network, using HTTP PUT requests to publish new contexts.
 
-- **Archivo**: [monitor/monitor.go](context-awareness-manager-svc/src/monitor/monitor.go)
+- **File**: [monitor.go](components/context-awareness-manager/internal/monitor/monitor.go)
 
-## Estructura del Contexto
+- **Microservices involved**:
+  - **ContainerEngine**: Context Awareness Manager submodule responsible that processes context images and return their logs.
+  - **ZenohRouter**: Agent component acting as an endpoint within the Distributed Network.
 
-El contexto que se maneja en este módulo está definido en el archivo [models.go](context-awareness-manager-svc/src/models.go) y tiene la siguiente estructura:
+### Models
+
+The context managed within this module is defined in [models.go](components/context-awareness-manager/internal/models/models.go) and has the following structure:
 
 ```go
 package context
@@ -44,34 +50,43 @@ type Context struct {
 }
 ```
 
-## Pasos para construir y ejecutar la imagen Docker
+## Installation
 
-1. Clonar el repositorio
+Ensure you have Go installed and set up on your machine. Initialize your Go module and get the necessary dependencies.
+
+```sh
+go mod init context-awareness-manager
+go mod tidy
+```
+
+### Deploy a Container
+
+1. Clone the repository
 
 ```sh
 git clone https://github.com/eviden-colmena/colmena-eviden.git
 ```
 
-2. Construir la imagen Docker
+2. Build the Docker image
 
 ```sh
-docker build -t registry.atosresearch.eu:18512/context-awareness-manager -f agent/context-awareness-manager/build/Dockerfile .
+docker build -t jrubioc0/context-awareness-manager -f components/context-awareness-manager/build/Dockerfile .
 ```
 
-3. Ejecutar el contenedor Docker
+3. Run the Docker container
 
 ```sh
 docker compose -f install/compose/docker-compose.yaml up -d context-awareness-manager
 ```
 
-4. Acceder a la aplicación
+4. Access the application
 
-Abre tu navegador y visita http://localhost:8080.
+Open your browser and go to http://localhost:8080/health
 
-5. Ver los datos en la base de datos SQLite
+5. View data in the SQLite database:
 
 ```sh
-$ sqlite3 ./context-awareness-manager-svc/context_awareness_manager.db
+$ sqlite3 ./components/context-awareness-manager/context_awareness_manager.db
 SQLite version 3.34.1 2021-01-20 14:10:07
 Enter ".help" for usage hints.
 sqlite> .tables
@@ -89,7 +104,9 @@ Processing|xaviercasasbsc/colmena-processing
 sqlite> .exit
 ```
 
-### Ejemplo de Solicitudes
+## API Usage
+
+### Sample Requests
 
 - **Endpoint**: `POST /context`
 - **Request Body**:
@@ -122,32 +139,11 @@ curl -X POST http://localhost:8080/context -H "Content-Type: application/json" -
         }
     ],
     "kpis": [],
-    "dockerRoleDefinitions": [
-        {
-            "id": "Sensing",
-            "imageId": "xaviercasasbsc/colmena-sensing",
-            "hardwareRequirements": [
-                "CAMERA"
-            ],
-            "kpis": []
-        },
-        {
-            "id": "Processing",
-            "imageId": "xaviercasasbsc/colmena-processing",
-            "hardwareRequirements": [
-                "CPU"
-            ],
-            "kpis": [
-                {
-                    "value": "buffer_queue_size[100000000s] < 10"
-                }
-            ]
-        }
-    ]
+    "dockerRoleDefinitions": []
 }'
 ```
 
-## Generating Swagger Documentation
+## Swagger Documentation
 To generate the Swagger documentation, annotate the controller methods and run the following command in the root project folder:
 
 ```bash

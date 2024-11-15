@@ -24,14 +24,34 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/api/types"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/client"
 )
 
 // RunContainer deploys a container with the specified image and command
 // and returns the container logs
 func RunContainer(cli *client.Client, image string, cmd []string) (string, error) {
+	// Get the Docker Hub repository from an environment variable
+	repo := os.Getenv("REPOSITORY")
+	if repo != "" {
+		image = fmt.Sprintf("%s/%s", repo, image)
+	}
+
+	// Pull the image from Docker Hub
+	fmt.Printf("Pulling image %s...\n", image)
+	out, err := cli.ImagePull(context.Background(), image, types.ImagePullOptions{})
+	if err != nil {
+		return "", fmt.Errorf("error pulling image: %v", err)
+	}
+	defer out.Close()
+
+	// Read the pull output
+	io.Copy(io.Discard, out)
+	fmt.Printf("Image %s pulled successfully.\n", image)
 
 	// Define the container configuration
 	config := &container.Config{
@@ -65,14 +85,14 @@ func RunContainer(cli *client.Client, image string, cmd []string) (string, error
 	}
 
 	// Get the container logs
-	out, err := cli.ContainerLogs(context.Background(), resp.ID, container.LogsOptions{ShowStdout: true, ShowStderr: true})
+	logOut, err := cli.ContainerLogs(context.Background(), resp.ID, container.LogsOptions{ShowStdout: true, ShowStderr: true})
 	if err != nil {
 		return "", fmt.Errorf("error getting container logs: %v", err)
 	}
 
 	// Read logs into a buffer
 	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(out); err != nil {
+	if _, err := buf.ReadFrom(logOut); err != nil {
 		return "", fmt.Errorf("error reading container logs: %v", err)
 	}
 
@@ -107,5 +127,5 @@ func decodeDockerLogs(reader io.Reader) string {
 		}
 		logs += string(payload)
 	}
-	return logs
+	return strings.TrimSpace(logs)
 }
