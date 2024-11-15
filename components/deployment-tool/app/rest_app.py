@@ -1,4 +1,4 @@
-#!/usr/bin/pythonCOLMENA-DESCRIPTION-SERVICE
+#!/usr/bin/pythonCOLMENA-DEPLOYMENT-TOOL
 # Copyright © 2024 EVIDEN
 
 # Licensed under the Apache License, Version 2.0 (the "License");
