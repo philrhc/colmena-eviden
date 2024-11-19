@@ -1,4 +1,4 @@
-#!/usr/bin/pythonCOLMENA-DEPLOYMENT-TOOL
+#!/usr/bin/pythonCOLMENA-DESCRIPTION-SERVICE
 # Copyright © 2024 EVIDEN
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,7 +31,7 @@ logging.getLogger("docker").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
 class RestManager:
-    def __init__(self, base_directory: str, repo_url: str):
+    def __init__(self, base_directory: str):
         # Read the service description JSON
         config_path = os.path.join(base_directory, "service_description.json")
         with open(config_path, "r") as f:
@@ -44,7 +44,6 @@ class RestManager:
             self.dockerDefinitions[definition["id"]] = definition["imageId"]
 
         self.base_directory = base_directory
-        self.repo_url = repo_url
         self.client = docker.DockerClient(
             base_url='unix://var/run/docker.sock',
             tls=False
@@ -166,7 +165,7 @@ class RestManager:
 
         try:
             # Build the Docker image from the specified build context (directory with Dockerfile)
-            image, logs = self.client.images.build(path=build_context, tag=f"{self.repo_url}/{image_tag}")
+            image, logs = self.client.images.build(path=build_context, tag=image_tag)
             
             # Capture and log the build process
             for log in logs:
@@ -185,10 +184,10 @@ class RestManager:
         logging.info(f"Pushing image {image_tag} to the registry...")
         try:
             # Push the image to the Docker registry
-            for line in self.client.images.push(f"{self.repo_url}/{image_tag}", stream=True, decode=True):
+            for line in self.client.images.push(image_tag, stream=True, decode=True):
                 if 'error' in line:
                     raise Exception(f"Error pushing image {image_tag}: {line['error']}")
-            logging.info(f"Image {image_tag} pushed successfully to {self.repo_url}.")
+            logging.info(f"Image {image_tag} pushed successfully to repository.")
 
         except docker.errors.APIError as e:
             raise Exception(f"Error pushing image {image_tag}: {str(e)}")

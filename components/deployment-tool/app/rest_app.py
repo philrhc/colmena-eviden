@@ -1,4 +1,4 @@
-#!/usr/bin/pythonCOLMENA-DEPLOYMENT-TOOL
+#!/usr/bin/pythonCOLMENA-DESCRIPTION-SERVICE
 # Copyright © 2024 EVIDEN
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +32,7 @@ async def build_and_push(input_data: InputData):
     """
     Endpoint to process images: build, push, and publish a service description.
     """
-    manager = RestManager(input_data.base_directory, input_data.repo_url)
+    manager = RestManager(input_data.base_directory)
 
     try:
         manager.build_and_push_images()
