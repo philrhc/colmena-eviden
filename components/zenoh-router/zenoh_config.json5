@@ -5,10 +5,16 @@
     },
     storage_manager: {             // activate and configure the storage_manager plugin
       storages: {
-        colmena: {                  // configure a "colmena" storage
-          key_expr: "dockerContextDefinitions/**",   // which subscribes and replies to query on company_premises
-          volume: {                // and using the "memory" volume (always present by default)
-            id: "memory"
+        "colmena_service_definitions": {  // Configure storage for colmena_service_definitions
+          "key_expr": "colmena_service_definitions/**",  // Listen to the key expression "colmena_service_definitions/**"
+          "volume": {  // Use the default "memory" volume
+            "id": "memory"
+          }
+        },
+        "colmena_context_definitions": {  // Configure storage for colmena_context_definitions
+          "key_expr": "dockerContextDefinitions/**",  // Listen to the key expression "dockerContextDefinitions/**"
+          "volume": {  // Use the default "memory" volume
+            "id": "memory"
           }
         }
       }
