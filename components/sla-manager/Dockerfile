@@ -14,7 +14,7 @@ WORKDIR /go/src/sla
 COPY . .
 
 # Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
-RUN go get -d -v ./...
+RUN go mod download 
 
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o SLAMgr .

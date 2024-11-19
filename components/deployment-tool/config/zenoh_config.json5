@@ -1,0 +1,15 @@
+{
+    // Which endpoints to listen on.
+    "listen": {
+        endpoints:["tcp/0.0.0.0:7447"]
+    },
+    // Which endpoints to connect to.
+    "connect": {
+        endpoints:["tcp/zenoh-router:7447"]
+    },
+    transport: {
+        unicast: {
+            max_links: 10
+        }
+    }
+}

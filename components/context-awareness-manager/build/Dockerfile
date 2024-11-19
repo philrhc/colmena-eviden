@@ -13,7 +13,7 @@ RUN apk add --no-cache gcc musl-dev sqlite-dev
 WORKDIR /go/src
 
 # Copy go mod and sum files 
-COPY agent/context-awareness-manager ./
+COPY components/context-awareness-manager ./
 
 # Download all dependencies. Dependencies will be cached if the go.mod and the go.sum files are not changed 
 RUN go mod download 

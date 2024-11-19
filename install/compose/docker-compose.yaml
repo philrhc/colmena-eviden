@@ -1,18 +1,16 @@
 services:
   containerengine:
     container_name: containerengine
-    image: jrubioc0/containerengine
+    image: jrubioc0/containerengine:develop
     restart: always
     ports:
       - 9000:9000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
 
-  context-awareness:
-    container_name: context-awareness
-    image: jrubioc0/context-awareness
+  context-awareness-manager:
+    container_name: context-awareness-manager
+    image: jrubioc0/context-awareness-manager:develop
     restart: always
     ports:
       - 8080:8080
@@ -21,39 +19,39 @@ services:
     depends_on:
       - containerengine
 
-  prometheus:
-    container_name: prometheus
-    image: prom/prometheus
-    volumes:
-      - ../../tools/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
+  # prometheus:
+  #   container_name: prometheus
+  #   image: prom/prometheus
+  #   volumes:
+  #     - ../../components/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+  #   ports:
+  #     - "9090:9090"
+  #   command: --web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml
   
-  node-exporter:
-    container_name: node-exporter
-    image: prom/node-exporter:latest
-    restart: always
-    ports:
-      - 9100:9100
+  # node-exporter:
+  #   container_name: node-exporter
+  #   image: prom/node-exporter:latest
+  #   restart: always
+  #   ports:
+  #     - 9100:9100
 
-  sla-manager:
-    container_name: sla-manager
-    image: sla-manager:latest
-    restart: always
-    ports:
-      - 8081:8080
-      - 8099:8099
-    environment:
-      PROMETHEUS_ADDRESS: "http://prometheus:9090"
-      MONITORING_ADAPTER: "prometheus"
-      GRPC_PORT: "8099"
-    depends_on:
-      - prometheus
+  # sla-manager:
+  #   container_name: sla-manager
+  #   image: sla-manager:latest
+  #   restart: always
+  #   ports:
+  #     - 8081:8080
+  #     - 8099:8099
+  #   environment:
+  #     PROMETHEUS_ADDRESS: "http://prometheus:9090"
+  #     MONITORING_ADAPTER: "prometheus"
+  #     GRPC_PORT: "8099"
+  #   depends_on:
+  #     - prometheus
 
   zenoh-router:
     container_name: zenoh-router
-    image: eclipse/zenoh:0.11.0
+    image: eclipse/zenoh:1.0.1
     restart: unless-stopped
     ports:
       - 7447:7447
@@ -61,16 +59,12 @@ services:
     environment:
       RUST_LOG: "debug"
     volumes:
-      - ../../tools/zenoh/zenoh_config.json5:/zenoh_config.json5:ro
+      - ../../components/zenoh-router/zenoh_config.json5:/zenoh_config.json5:ro
     command: -c /zenoh_config.json5
 
-  pyconn:
-    container_name: pyconn
-    image: zenoh-prometheus-conn:latest
-    restart: always
-    ports:
-      - 8999:8999
-      
-  colmena-role:
-    container_name: colmena-role
-    image: prhcatbsc/test_contextpublisher
+  # pyconn:
+  #   container_name: pyconn
+  #   image: zenoh-prometheus-conn:latest
+  #   restart: always
+  #   ports:
+  #     - 8999:8999
