@@ -19,11 +19,6 @@
 // Package models contains the data structures used for service description, alerts, and KPIs.
 package models
 
-// KPI represents a KPI in the JSON
-type KPI struct {
-	Value string `json:"value"`
-}
-
 // ID represents the ID structure in the JSON
 type ID struct {
 	Value string `json:"value"`
@@ -40,14 +35,14 @@ type DockerRoleDefinition struct {
 	ID                   string   `json:"id"`
 	ImageID              string   `json:"imageId"`
 	HardwareRequirements []string `json:"hardwareRequirements"`
-	KPIs                 []KPI    `json:"kpis"`
+	KPIs                 []string `json:"kpis"`
 }
 
 // ServiceDescription represents the entire JSON structure
 type ServiceDescription struct {
 	ID                       ID                        `json:"id"`
 	DockerContextDefinitions []DockerContextDefinition `json:"dockerContextDefinitions"`
-	KPIs                     []KPI                     `json:"kpis"`
+	KPIs                     []string                  `json:"kpis"`
 	DockerRoleDefinitions    []DockerRoleDefinition    `json:"dockerRoleDefinitions"`
 }
 
