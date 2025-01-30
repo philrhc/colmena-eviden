@@ -33,6 +33,7 @@ COPY --from=builder /go/src/main .
 # Set permissions for etsn
 # RUN chown -R jrubioc:docker /home/jrubioc
 # USER jrubioc
+USER root
 
 # Expose port 8000
 EXPOSE 9000
