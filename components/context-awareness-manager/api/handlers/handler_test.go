@@ -24,6 +24,7 @@ import (
 	"context-awareness-manager/internal/monitor"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -63,41 +64,27 @@ func TestHandleContext(t *testing.T) {
 	t.Run("Valid request", func(t *testing.T) {
 		// Create a new in-memory SQLite database for testing
 		db, err := sql.Open("sqlite3", ":memory:")
-		if err != nil {
-			t.Fatalf("Could not open database: %v", err)
-		}
+		assert.NoError(t, err, "Could not open database")
 		defer db.Close()
 
-		// Create the tables
+		// Create table
 		_, err = db.Exec(`CREATE TABLE dockerContextDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
-		if err != nil {
-			t.Fatalf("Could not create table: %v", err)
-		}
-		_, err = db.Exec(`CREATE TABLE dockerRoleDefinitions (id TEXT PRIMARY KEY, imageId TEXT NOT NULL)`)
-		if err != nil {
-			t.Fatalf("Could not create table: %v", err)
-		}
+		assert.NoError(t, err, "Could not create table")
 
 		// Define a valid context based on the provided JSON
-		ctx := models.ServiceDescription{
+		serviceDesc := models.ServiceDescription{
 			ID: models.ID{Value: "ExampleApplication"},
 			DockerContextDefinitions: []models.DockerContextDefinition{
 				{ID: "company_premises", ImageID: "xaviercasasbsc/company_premises"},
 			},
-			KPIs:                  []models.KPI{},
-			DockerRoleDefinitions: []models.DockerRoleDefinition{},
+			KPIs:                  json.RawMessage("[]"),
+			DockerRoleDefinitions: json.RawMessage("[]"),
 		}
+		ctx, err := json.Marshal(serviceDesc)
+		assert.NoError(t, err, "Could not marshal expected JSON")
 
-		// Marshal the context to JSON
-		jsonData, err := json.Marshal(ctx)
-		if err != nil {
-			t.Fatalf("Could not marshal context: %v", err)
-		}
-
-		req, err := http.NewRequest("POST", "/context", bytes.NewBuffer(jsonData))
-		if err != nil {
-			t.Fatalf("Could not create request: %v", err)
-		}
+		req, err := http.NewRequest("POST", "/context", bytes.NewBuffer(ctx))
+		assert.NoError(t, err, "Could not create request")
 		req.Header.Set("Content-Type", "application/json")
 
 		// Create a ResponseRecorder to record the response
@@ -118,8 +105,10 @@ func TestHandleContext(t *testing.T) {
 		// Check the status code
 		assert.Equal(t, http.StatusOK, rr.Code)
 
-		// Check the response body
-		expected := `Context received: {ID:{Value:ExampleApplication} DockerContextDefinitions:[{ID:company_premises ImageID:xaviercasasbsc/company_premises}] KPIs:[] DockerRoleDefinitions:[]}` + "\n"
-		assert.Equal(t, expected, rr.Body.String())
+		// Ckeck JSON response
+		expectedJSON, err := json.Marshal(serviceDesc)
+		fmt.Printf("Received: %s\n", rr.Body.String())
+		assert.NoError(t, err, "Could not marshal expected response JSON")
+		assert.Equal(t, string(expectedJSON), rr.Body.String())
 	})
 }

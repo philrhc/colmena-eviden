@@ -76,15 +76,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create the roles  table if it doesn't exist
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS dockerRoleDefinitions (
-		id TEXT PRIMARY KEY,
-		imageId TEXT NOT NULL
-	)`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	http.HandleFunc("/health", handlers.HealthHandler)
 	http.HandleFunc("/context", func(w http.ResponseWriter, r *http.Request) {
 		handlers.HandleContext(w, r, db)
