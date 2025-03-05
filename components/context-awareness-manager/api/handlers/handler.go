@@ -68,15 +68,6 @@ func HandleContext(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Printf("Context classification: %s\n", classification)
 	}
 
-	// Insert new role into the database
-	for _, role := range ctx.DockerRoleDefinitions {
-		_, err = db.Exec(`INSERT OR REPLACE INTO dockerRoleDefinitions (id, imageId) VALUES (?, ?)`, role.ID, role.ImageID)
-		if err != nil {
-			log.Printf("Failed to save role response for ID %s: %v", role.ID, err)
-			return
-		}
-	}
-
 	// Respond with a success message
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Context received: %+v\n", ctx)
