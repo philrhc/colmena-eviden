@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is the Context Awareness Manager service API for Docker context management.",
+        "description": "API API for managing Docker context and roles in the COLMENA project.",
         "title": "Context Awareness Manager API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
@@ -11,33 +11,13 @@
         },
         "license": {
             "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0"
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "localhost:8000",
     "basePath": "/",
     "paths": {
-        "/": {
-            "get": {
-                "description": "Returns a welcome message",
-                "produces": [
-                    "text/plain"
-                ],
-                "tags": [
-                    "General"
-                ],
-                "summary": "Main welcome route",
-                "responses": {
-                    "200": {
-                        "description": "Welcome",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/context": {
             "post": {
                 "description": "Endpoint to receive and process Docker context",
@@ -58,7 +38,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Context"
+                            "$ref": "#/definitions/context-awareness-manager_internal_models.DockerContextDefinition"
                         }
                     }
                 ],
@@ -66,7 +46,7 @@
                     "200": {
                         "description": "Context processed successfully",
                         "schema": {
-                            "$ref": "#/definitions/models.Result"
+                            "$ref": "#/definitions/context-awareness-manager_internal_models.Result"
                         }
                     },
                     "400": {
@@ -100,33 +80,7 @@
         }
     },
     "definitions": {
-        "models.Context": {
-            "type": "object",
-            "properties": {
-                "dockerContextDefinitions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.DockerContextDefinition"
-                    }
-                },
-                "dockerRoleDefinitions": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.DockerRoleDefinition"
-                    }
-                },
-                "id": {
-                    "$ref": "#/definitions/models.ID"
-                },
-                "kpis": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.KPI"
-                    }
-                }
-            }
-        },
-        "models.DockerContextDefinition": {
+        "context-awareness-manager_internal_models.DockerContextDefinition": {
             "type": "object",
             "properties": {
                 "id": {
@@ -137,46 +91,7 @@
                 }
             }
         },
-        "models.DockerRoleDefinition": {
-            "type": "object",
-            "properties": {
-                "hardwareRequirements": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "imageId": {
-                    "type": "string"
-                },
-                "kpis": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.KPI"
-                    }
-                }
-            }
-        },
-        "models.ID": {
-            "type": "object",
-            "properties": {
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.KPI": {
-            "type": "object",
-            "properties": {
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Result": {
+        "context-awareness-manager_internal_models.Result": {
             "type": "object",
             "properties": {
                 "classification": {

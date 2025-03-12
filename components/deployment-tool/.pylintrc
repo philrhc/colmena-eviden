@@ -1,0 +1,14 @@
+[FORMAT]
+max-line-length=120
+
+[MASTER]
+disable=
+    C0114, # missing-module-docstring
+    W1203, # logging-fstring-interpolation
+    R0913, # too-many-arguments
+    R0902, # too-many-instance-attributes
+
+[TYPECHECK]
+ignored-modules=
+    zenoh
+

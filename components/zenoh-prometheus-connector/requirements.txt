@@ -1,0 +1,8 @@
+eclipse-zenoh==1.0.1
+numpy==2.1.3
+prometheus_client==0.21.0
+# Tests and documentation requirements
+pylint>=3.0.3
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pipdeptree>=2.13.2
