@@ -6,7 +6,7 @@
 *.dylib
 *.test
 *.out
-
+coverage*
 # Archivos compilados
 /bin
 

@@ -19,141 +19,132 @@ This work has been implemented within the context of COLMENA project.
 package monitor
 
 import (
-	"bytes"
-	"context-awareness-manager/internal/models"
-	"database/sql"
-	"encoding/json"
+	"context-awareness-manager/internal/database"
+	"context-awareness-manager/internal/dockerclient"
+	"context-awareness-manager/internal/publisher"
+	"context-awareness-manager/pkg/models"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
-// GetContextData check if DockerContextDefinitions table has data and return imageID list
-func GetContextData(db *sql.DB) ([]models.DockerContextDefinition, error) {
-	rows, err := db.Query("SELECT id, imageId FROM DockerContextDefinitions")
-	if err != nil {
-		return nil, fmt.Errorf("failed to query DockerContextDefinitions table: %v", err)
-	}
-	defer rows.Close()
+// ContextMonitor defines the interface for handling Docker contexts
+type ContextMonitor interface {
+	RegisterContexts([]models.DockerContextDefinition) error
+	StartMonitoring()
+}
 
-	var contextList []models.DockerContextDefinition
-	for rows.Next() {
-		var context models.DockerContextDefinition
-		if err := rows.Scan(&context.ID, &context.ImageID); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %v", err)
+// contextMonitorImpl implements the ContextMonitor interface.
+type contextMonitorImpl struct {
+	dbConnection *database.SQLConnector
+	dockerClient dockerclient.DockerClient
+	publisher    publisher.Publisher
+}
+
+// NewContextMonitor creates a new instance of contextMonitorImpl.
+func NewContextMonitor(dbConnection *database.SQLConnector, dockerClient dockerclient.DockerClient, publisher publisher.Publisher) ContextMonitor {
+	return &contextMonitorImpl{
+		dbConnection: dbConnection,
+		dockerClient: dockerClient,
+		publisher:    publisher,
+	}
+}
+
+// RegisterContexts inserts new Docker contexts into the database
+func (c *contextMonitorImpl) RegisterContexts(newContexts []models.DockerContextDefinition) error {
+	// Insert new contexts into the database
+	err := c.dbConnection.InsertContexts(newContexts)
+	if err != nil {
+		logrus.Errorf("Error inserting new contexts into database: %v", err)
+	}
+	logrus.Infof("Successfully registered %d new contexts", len(newContexts))
+	return nil
+}
+
+// StartContextMonitoring listens for new contexts and processes them dynamically.
+func (c *contextMonitorImpl) StartMonitoring() {
+
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+
+		// Get stored contexts from the database
+		contexts, err := c.dbConnection.GetAllContexts()
+		if err != nil {
+			logrus.Errorf("Error retrieving contexts from database: %v", err)
 		}
-		contextList = append(contextList, context)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("row iteration error: %v", err)
-	}
-	return contextList, nil
-}
 
-func DeployContainer(image string, cmd []string) (string, error) {
-	// Retrieve the destination URL from an environment variable
-	destinationURL := os.Getenv("DOCKERENGINE_URL")
-	if destinationURL == "" {
-		log.Fatal("DOCKERENGINE_URL environment variable is not set")
-	}
-	// Build the request
-	requestBody := models.DeployRequest{
-		Image: image,
-		Cmd:   cmd,
-	}
+		if len(contexts) == 0 {
+			logrus.Debug("No contexts to monitor, waiting for new ones...")
+			continue
+		}
 
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		return "", fmt.Errorf("error marshalling JSON request: %v", err)
-	}
-
-	// Make the HTTP POST request to the microservice
-	resp, err := http.Post(destinationURL, "application/json", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return "", fmt.Errorf("error making HTTP POST request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Process the response
-	var response models.DeployResponse
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return "", fmt.Errorf("error decoding JSON response: %v", err)
-	}
-
-	if response.Error != "" {
-		return "", fmt.Errorf("deployment error: %s", response.Error)
-	}
-
-	return response.Classification, nil
-}
-
-// MonitorContext makes the HTTP POST request and compare the results
-func MonitorContext(interval time.Duration, contextList []models.DockerContextDefinition, resultChannel chan models.Result) {
-	var lastResults = make(map[string]string)
-
-	for {
-		for _, context := range contextList {
-			currentClassification, err := DeployContainer(context.ImageID, nil)
-			if err != nil {
-				log.Printf("Error deploying container: %v\n", err)
+		// Iterate over each context and classify + publish
+		for _, ctx := range contexts {
+			// Classify the context
+			classification, error := c.ClassifyContext(ctx)
+			if error != nil {
+				logrus.Errorf("Error processing context %s: %v", ctx.ID, error)
 				continue
 			}
 
-			if lastResult, ok := lastResults[context.ImageID]; !ok || currentClassification != lastResult {
-				log.Printf("Context classification: %s\n", currentClassification)
-				resultChannel <- models.Result{ID: context.ID, Classification: currentClassification}
-				lastResults[context.ImageID] = currentClassification
-			}
+			// Construct the key expression for the context
+			keyExpression := fmt.Sprintf("dockerContextDefinitions/%s", ctx.ID)
 
-			time.Sleep(interval)
+			if classification != "" {
+				err := c.publisher.PublishContextClassification(keyExpression, classification)
+				if err != nil {
+					logrus.Errorf("Error publishing context: %v", err)
+					continue
+				}
+				logrus.Info("Context published successfully!")
+			}
 		}
 	}
 }
 
-// PublishContext sends an HTTP PUT request to the specified URL with a JSON body
-// containing the provided value. The function takes two string parameters: `url` and `value`.
-// It returns an error if the PUT request fails or if the response status code is not 200 OK.
-func PublishContext(key string, value string) error {
-	// Construct the URL using the provided key
-	zenohURL := os.Getenv("ZENOH_URL")
-	if zenohURL == "" {
-		zenohURL = "http://zenoh-router:8000"
-	}
-	url := fmt.Sprintf("%s/%s", zenohURL, key)
-
-	// Create the JSON body with the provided value
-	data := map[string]string{"value": value}
-	jsonData, err := json.Marshal(data)
+// ProcessContextClassifications checks and updates the classification of each context
+func (c *contextMonitorImpl) ClassifyContext(ctx models.DockerContextDefinition) (string, error) {
+	// Run the container and obtain the classification
+	classification, err := c.dockerClient.RunContainer(ctx.ImageID, []string{})
 	if err != nil {
-		return fmt.Errorf("error converting data to JSON: %v", err)
+		logrus.Errorf("Error deploying container for context %s: %v\n", ctx.ID, err)
+		return "", err
 	}
 
-	log.Printf("Send %s to %s", jsonData, url)
-
-	// Create a new HTTP PUT request
-	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonData))
+	// Get the last classification for the context
+	lastClassification, err := c.dbConnection.GetLastContextClassification(ctx.ImageID)
 	if err != nil {
-		return fmt.Errorf("error creating PUT request: %v", err)
+		logrus.Errorf("Error retrieving last classification for %s: %v\n", ctx.ID, err)
+		return "", err
 	}
 
-	// Set the Content-Type header to application/json
-	req.Header.Set("Content-Type", "application/json")
+	// If no previous classification exists, insert the new one directly
+	if lastClassification == "" {
+		logrus.Infof("No previous classification found for %s. Inserting initial classification: %s", ctx.ID, classification)
+		err = c.dbConnection.InsertClassification(ctx.ImageID, classification)
+		if err != nil {
+			logrus.Errorf("Error saving classification for %s: %v", ctx.ID, err)
+			return "", err
+		}
+		return classification, nil
+	}
 
-	// Send the HTTP PUT request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// If classification hasn't changed, return empty string to indicate no change
+	if classification == lastClassification {
+		return "", nil
+	}
+
+	// If classification has changed, insert the new classification into the database
+	logrus.Infof("Context classification for %s: %s\n", ctx.ID, classification)
+	err = c.dbConnection.InsertClassification(ctx.ImageID, classification)
 	if err != nil {
-		return fmt.Errorf("error sending PUT request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Check if the response status code is 200 OK
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+		logrus.Errorf("Error saving classification for %s: %v", ctx.ID, err)
+		return "", err
 	}
 
-	return nil
+	// Return the new classification
+	return classification, nil
 }

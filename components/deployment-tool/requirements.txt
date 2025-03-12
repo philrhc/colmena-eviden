@@ -16,3 +16,8 @@ starlette==0.41.2
 typing_extensions==4.12.2
 urllib3==2.2.3
 uvicorn==0.32.0
+# Tests and documentation requirements
+pylint>=3.0.3
+pytest>=8.0.0
+pytest-cov>=4.1.0
+pipdeptree>=2.13.2

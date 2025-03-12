@@ -7,6 +7,10 @@
 *.test
 *.out
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
 # Archivos compilados
 /bin
 /build
@@ -22,6 +26,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+.venv/
 
 # Archivos temporales de compilación
 *.log
@@ -30,5 +35,5 @@ Thumbs.db
 # Directorios específicos de trabajo
 /tmp
 
-# Python virtual env
-.venv/
+# Credentials
+credentials

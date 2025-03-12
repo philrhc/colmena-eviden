@@ -1,0 +1,8 @@
+venv*
+vev*
+qa_report*
+*.egg*
+**/*pyc
+report.txt
+htmlcov*
+.coverage

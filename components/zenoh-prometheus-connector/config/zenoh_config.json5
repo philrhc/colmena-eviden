@@ -1,0 +1,11 @@
+{
+    // Which endpoints to connect to.
+    "connect": {
+        endpoints:["tcp/192.168.137.47:7447"]
+    },
+    transport: {
+        unicast: {
+            max_links: 10
+        }
+    }
+}

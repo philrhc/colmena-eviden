@@ -1,0 +1,10 @@
+{
+    "connect": {
+        endpoints:["tcp/zenoh-router:7447"]
+    },
+    transport: {
+        unicast: {
+            max_links: 10
+        }
+    }
+}
