@@ -40,12 +40,15 @@ services:
     depends_on:
       - prometheus
 
-  zenoh-prometheus-connector:
-    container_name: zenoh-prometheus-connector
+  zenoh-prometheus-etl:
+    container_name: zenoh-prometheus-etl
     image: "${REGISTRY_NAME}/zenoh-prometheus-connector:${TAG}"
     restart: always
     ports:
       - 8999:8999
+    environment:
+      AGENT_ID: ${AGENT_ID}
+      VERSION: ${TAG}
     volumes:
       - ./zenoh-client:/app/zenoh-client
     depends_on:

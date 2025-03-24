@@ -22,37 +22,48 @@ from zenoh import open, Config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger("Zenoh-Prometheus-Connector")
+logger = logging.getLogger("COLMENA ETL")
 
-colmena_total_people = Gauge('colmena_metric1', 'metric description', ['metric', 'path', 'desc'])
+# Retrieve agent ID from environment variable
+AGENT_ID = os.getenv("AGENT_ID")
+
 # Define Prometheus Gauges
-sla_metric = Gauge('colmena_sla_metric', 'SLA Metric description', ['metric', 'path', 'desc'])
-context_metric = Gauge('colmena_context_metric', 'metric description', ['metric', 'name', 'value', 'desc'])
+context_metric = Gauge(f'{AGENT_ID}/colmena_context_metric', 'Context Metric description', ['building', 'floor', 'room'])
+role_metric = Gauge(f'{AGENT_ID}/colmena_role_metric', 'Role Metric description', ['building', 'floor', 'room'])
 
-def sla_listener(data):
+def role_listener(data):
     """
-    Process data received for the SLA key expression.
+    Process data received for the Role key expression.
     This function processes the data and updates the corresponding Prometheus metric.
     """
-    logger.info(">>>> Processing COLMENA - SLA metrics ...")
-    logger.info(f"Processing SLA metric: {data}")
+    logger.info(">>>> Processing COLMENA - Role metrics ...")
+    logger.info(f"Processing Role metric: {data}")
 
     try:
         # Extract key and value from the data
         key_expr = data.key_expr
-        payload = data.payload.to_string()
+        raw_payload = data.payload.to_string()
 
-        # Update Prometheus SLA metric
-        sla_metric.labels(
-            metric="colmena_sla",
-            path=key_expr,
-            desc='SLA metric description'
-        ).set(payload)
+        # Parse the payload as a dictionary
+        payload_dict = json.loads(raw_payload)
 
-        logger.info(f"Metric processed: [metric=colmena_sla, path={key_expr}]")
+        # Extract context values
+        building = payload_dict.get("building", "unknown")
+        floor = payload_dict.get("floor", "unknown")
+        room = payload_dict.get("room", "unknown")
+        metric = payload_dict.get("value", "unknown")
+
+        # Update Prometheus Role metric
+        role_metric.labels(
+            building=building,
+            floor=floor,
+            room=room,
+        ).set(metric)
+
+        logger.info(f"Metric processed: [name={key_expr}, context={building}/{floor}/{room}, value={metric}]")
 
     except Exception as error:
-        logger.error(f"Error processing SLA metric: {error}")
+        logger.error(f"Error processing Role metric: {error}")
 
 def context_listener(data):
     """
@@ -70,32 +81,30 @@ def context_listener(data):
         # Parse the payload as a dictionary
         payload_dict = json.loads(raw_payload)
 
-        # Iterate over all fields in the dictionary
-        for field, value in payload_dict.items():
-            # Create a flexible value representation
-            payload_value = f"{field}: {value}"
+        # Extract context values
+        building = payload_dict.get("building", "unknown")
+        floor = payload_dict.get("floor", "unknown")
+        room = payload_dict.get("room", "unknown")
 
-            # Update Prometheus context metric
-            context_metric.labels(
-                metric="colmena_context", 
-                name=key_expr, 
-                value=payload_value, 
-                desc=f'Context value for {field}'
-            ).set(1)
+        # Update Prometheus Context metric
+        context_metric.labels(
+            building=building,
+            floor=floor,
+            room=room,
+        ).set(1)
             
-            logger.info(f"Metric processed: [name={key_expr}, value={payload_value}]")
+        logger.info(f"Metric processed: [name={key_expr}, value={building}/{floor}/{room}]")
 
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse payload as JSON: {e}")
     except Exception as error:
         logger.error(f"Error processing context data: {error}")
 
-
 def main():
     """
     Main function to initialize Zenoh, set up subscriptions, and handle Prometheus metrics.
     """
-    logger.info("Starting [ZENOH-PROMETHEUS-CONNECTOR, version develop] ...")
+    logger.info(f"Starting [COLMENA ETL, version {os.getenv("VERSION", "develop")}] ...")
 
     # Start the Prometheus HTTP server
     start_http_server(8999)
@@ -111,11 +120,11 @@ def main():
         logger.info(f"Zenoh session initialized successfully")
 
         # Declare subscribers
-        session.declare_subscriber("tests/**", sla_listener)
-        logger.info("Subscribed to tests/**")
+        role_subscriber = session.declare_subscriber(f"colmena/metrics/{AGENT_ID}/**", role_listener)
+        logger.info(f"Subscribed to colmena/metrics/{AGENT_ID}/**")
 
-        session.declare_subscriber("dockerContextDefinitions/**", context_listener)
-        logger.info("Subscribed to dockerContextDefinitions/**")
+        context_subscriber = session.declare_subscriber(f"colmena/contexts/{AGENT_ID}/**", context_listener)
+        logger.info(f"Subscribed to colmena/contexts/{AGENT_ID}/**")
 
     except Exception as error:
         logger.error(f"Failed to subscribe to key expressions: {error}")
