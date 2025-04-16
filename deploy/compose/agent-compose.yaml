@@ -7,6 +7,7 @@ services:
       - 8080:8080
     environment:
       DOCKER_SERVER: "localhost:5000"
+      AGENT_ID: ${AGENT_ID}
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
@@ -40,9 +41,9 @@ services:
     depends_on:
       - prometheus
 
-  zenoh-prometheus-etl:
-    container_name: zenoh-prometheus-etl
-    image: "${REGISTRY_NAME}/zenoh-prometheus-connector:${TAG}"
+  metrics-etl:
+    container_name: metrics-etl
+    image: "${REGISTRY_NAME}/metrics-etl:${TAG}"
     restart: always
     ports:
       - 8999:8999
