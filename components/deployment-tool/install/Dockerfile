@@ -1,5 +1,7 @@
+ARG IMAGE_NAME=python:3.10-slim
+
 # Use an official Python runtime as a parent image
-FROM registry.atosresearch.eu:18520/library/python:3.10-slim
+FROM ${IMAGE_NAME}
 
 # Install necessary packages, including Docker CLI
 RUN apt-get update && \
