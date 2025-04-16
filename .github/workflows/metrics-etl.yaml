@@ -1,4 +1,4 @@
-name: Build and Push COLMENA Zenoh Prometheus Connector Module
+name: Build and Push COLMENA Metrics ETL Tool
 
 # CICD only is activated when:
 # - there is a push to a PR from any branch to any branch
@@ -9,22 +9,22 @@ on:
       - main
       - develop
     paths:
-      - "components/zenoh-prometheus-connector/**"
-      - ".github/workflows/zenoh-prometheus-connector.yaml"
+      - "components/metrics-etl/**"
+      - ".github/workflows/metrics-etl.yaml"
     tags:
       - '*'
   pull_request:
     paths:
-      - "components/zenoh-prometheus-connector/**"
-      - ".github/workflows/zenoh-prometheus-connector.yaml"
+      - "components/metrics-etl/**"
+      - ".github/workflows/metrics-etl.yaml"
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: "zenoh-prometheus-connector"
+      IMAGE_NAME: "metrics-etl"
       TAG: "1.0.0"
-      DIRECTORY_PATH: components/zenoh-prometheus-connector
+      DIRECTORY_PATH: components/metrics-etl
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
