@@ -95,7 +95,7 @@ func (s *SQLConnector) CreateTables() error {
 
 // InsertContext inserts a single context into the database
 func (s *SQLConnector) InsertContext(context models.DockerContextDefinition) error {
-	_, err := s.DB.Exec(`INSERT OR UPDATE INTO dockerContextDefinitions (id, imageId) VALUES (?, ?)`,
+	_, err := s.DB.Exec(`INSERT INTO dockerContextDefinitions (id, imageId) VALUES (?, ?)`,
 		context.ID, context.ImageID)
 	if err != nil {
 		return fmt.Errorf("failed to insert/update context ID %s: %v", context.ID, err)
@@ -186,7 +186,7 @@ func (s *SQLConnector) GetAllContexts() ([]models.DockerContextDefinition, error
 
 // InsertContext inserts a single context into the database
 func (s *SQLConnector) InsertClassification(imageID string, classification string) error {
-	_, err := s.DB.Exec(`INSERT OR REPLACE INTO dockerContextClassifications (imageId, classification) VALUES (?, ?)`,
+	_, err := s.DB.Exec(`INSERT INTO dockerContextClassifications (imageId, classification) VALUES (?, ?)`,
 		imageID, classification)
 	if err != nil {
 		return fmt.Errorf("failed to insert/update classification for %s: %v", imageID, err)
