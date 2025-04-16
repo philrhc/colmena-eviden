@@ -1,4 +1,6 @@
-# DEPLOYMENT TOOL
+# DEPLOYMENT TOOL (w/ PODMAN)
+
+## Descripción
 
 COLMENA Deployment Tool provides an API to build and push Docker images for distributed modules of a service provide in a specified base path. Also publish the service description to distributed network subscribers for further consumption.
 
@@ -27,35 +29,33 @@ COLMENA Deployment Tool provides an API to build and push Docker images for dist
 
 1. Clone this repository
 
-    ```sh
-    git clone https://github.com/eviden-colmena/colmena-eviden.git
-    cd components/deployment-tool
-    ```
+```sh
+git clone https://github.com/eviden-colmena/colmena-eviden.git
+```
 
-2. Install dependencies
+2. Install dependencies: 
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+# exit venv with `deactivate`
+```
 
-    ```bash
-    python -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    # exit venv with `deactivate`
-    ```
+2. Build the Docker image
 
-3. Build the Docker image
+```sh
+docker build -t registry.atosresearch.eu:18512/deployment-tool -f components/deployment-tool/install/Dockerfile .
+```
 
-    ```sh
-    docker build -t <GITHUB_REPO>/deployment-tool -f components/deployment-tool/install/Dockerfile .
-    ```
+3. Run the Docker container
 
-4. Run the Docker container
+```sh
+docker compose -f install/compose/docker-compose.yaml up -d deployment-tool
+```
 
-    ```sh
-    docker compose -f install/compose/docker-compose.yaml up -d deployment-tool
-    ```
+4. Access the application
 
-5. Access the application
-
-Open your browser and go to <http://localhost:8000/docs>
+Open your browser and go to http://localhost:8000/docs
 
 ## API Usage
 
@@ -63,14 +63,12 @@ Open your browser and go to <http://localhost:8000/docs>
 
 - **Endpoint**: `GET /deployservice`
 
-- **Example Curl Command**
-
+- **Example Curl Commmand**
 ```sh
 curl http://localhost:8000/deployservice
 ```
 
 - **Response body**
-
 ```sh
 {
   "message": "Images processed and service description published."
@@ -78,14 +76,13 @@ curl http://localhost:8000/deployservice
 ```
 
 - **Validate image creation (local-registry)**
-
 ```sh
-  curl -u <username>:<password> <http://localhost:5000/v2/_catalog>
+  curl -u <username>:<password> http://localhost:5000/v2/_catalog
 ```
 
 ## Swagger Documentation
 
-Available at run time in <http://127.0.0.1:8000/docs>
+Availble at run time in  http://127.0.0.1:8000/docs
 
 ## Running Test
 
@@ -100,14 +97,11 @@ pylint app --exit-zero --reports y >> qa_report.txt
 
 Tech:
 
-- **Tech Stack**: FastAPI, Python, Docker, Kubernetes, Helm
-- **CI/CD**: GitHub Actions (CICD Pipeline)
-- **Databases**: Not applicable for this component
-- **Other Tools**: Docker, Uvicorn, pytest (for testing)
+- 
 
 Asset Owner:
 
-- **Component Owner**: Maintained by the development team
+- 
 
 A Gitflow methodology is implemented within this repo. Proceed as follows:
 
