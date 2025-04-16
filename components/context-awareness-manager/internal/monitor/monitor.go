@@ -24,6 +24,7 @@ import (
 	"context-awareness-manager/internal/publisher"
 	"context-awareness-manager/pkg/models"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -91,7 +92,7 @@ func (c *contextMonitorImpl) StartMonitoring() {
 			}
 
 			// Construct the key expression for the context
-			keyExpression := fmt.Sprintf("dockerContextDefinitions/%s", ctx.ID)
+			keyExpression := fmt.Sprintf("colmena/contexts/%s/%s", os.Getenv("AGENT_ID"), ctx.ID)
 
 			if classification != "" {
 				err := c.publisher.PublishContextClassification(keyExpression, classification)

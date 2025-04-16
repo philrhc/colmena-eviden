@@ -35,7 +35,7 @@ type MockAPIClient struct {
 	mock.Mock
 }
 
-// Implementamos los métodos de client.APIClient que necesitamos
+// Implement the methods of client.APIClient that we need
 func (m *MockAPIClient) ImageList(ctx context.Context, opts image.ListOptions) ([]image.ListOptions, error) {
 	args := m.Called(ctx, opts)
 	return args.Get(0).([]image.ListOptions), args.Error(1)
@@ -47,11 +47,11 @@ func (m *MockAPIClient) ImagePull(ctx context.Context, ref string, options image
 }
 
 func TestGetFullImageTag(t *testing.T) {
-	// Sin configurar el servidor Docker
+	// Without configuring the Docker server
 	result := getFullImageTag("test-image")
 	assert.Equal(t, "test-image:latest", result)
 
-	// Configurando la variable DOCKER_SERVER
+	// Configuring the DOCKER_SERVER variable
 	os.Setenv("DOCKER_SERVER", "mydockerregistry.com")
 	defer os.Unsetenv("DOCKER_SERVER")
 
@@ -60,19 +60,19 @@ func TestGetFullImageTag(t *testing.T) {
 }
 
 func TestDecodeDockerLogs(t *testing.T) {
-	// Simulamos un log de Docker que consiste en un encabezado de 8 bytes y un payload
-	// El encabezado tiene el siguiente formato: [00 00 00 00 00 00 00 10] (payload de 16 bytes)
-	header := []byte{0, 0, 0, 0, 0, 0, 0, 23} // 23 bytes de payload
+	// Simulate a Docker log consisting of an 8-byte header and a payload
+	// The header has the following format: [00 00 00 00 00 00 00 10] (16-byte payload)
+	header := []byte{0, 0, 0, 0, 0, 0, 0, 23} // 23-byte payload
 	payload := []byte("This is the log message")
 	logData := append(header, payload...)
 
-	// Creamos un reader con los datos simulados
+	// Create a reader with the simulated data
 	reader := bytes.NewReader(logData)
 
-	// Llamamos a la función a probar
+	// Call the function to test
 	result := decodeDockerLogs(reader)
 
-	// Comprobamos que el resultado es el esperado
+	// Verify that the result is as expected
 	expected := "This is the log message"
 	assert.Equal(t, expected, result)
 }
