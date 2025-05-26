@@ -1,0 +1,17 @@
+{
+    "id": "d01",
+    "name": "qos-definition-name",
+    "state": "started",
+    "assessment": {},
+    "creation": "2024-01-16T17:09:45Z",
+    "expiration": "2026-01-16T17:09:45Z",
+    "details": {
+        "variables": [],
+        "guarantees": [
+            {
+                "name": "exampleplantcare_time",
+                "constraint": "exampleplantcare/moisture[5s] > 20"
+            }
+        ]
+    }
+}

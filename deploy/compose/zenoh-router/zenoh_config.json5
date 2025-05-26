@@ -9,9 +9,9 @@
     storage_manager: {
       /// Configure the storages supported by the volumes
       storages: {
-        "colmena_service_descriptions": {
+        "colmena_service_definitions": {
           /// Storages always need to know what set of keys they must work with. These sets are defined by a key expression.
-          "key_expr": "colmena_service_descriptions/**",
+          "key_expr": "colmena_service_definitions/**",
           /// Storages also need to know which volume will be used to actually store their key-value pairs.
           /// The "memory" volume is always available, and doesn't require any per-storage options, so requesting "memory" by string is always sufficient.
           "volume": "memory"

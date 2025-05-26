@@ -64,11 +64,12 @@ class Publisher:
         """
         logging.info("Publishing service description to Zenoh...")
         try:
+            key_expr = "colmena_service_definitions"
             # Convert the service description to bytes
             service_description = json.dumps(service_description).encode('utf-8')
             # Publish the service description to Zenoh
-            self.zenoh_session.put("colmena_service_descriptions", service_description)
-            logger.info("Service description published successfully.")
+            self.zenoh_session.put(key_expr, service_description)
+            logger.info(f"Service description published successfully to '{key_expr}'.")
             return True
         except zenoh.ZError as error:
             logger.error(f"Failed to publish service description: {str(error)}")

@@ -65,11 +65,8 @@ def role_listener(data: Sample):
         # Extract metric value and remove it from labels
         metric_value = payload_dict.pop("value", 0)
 
-        # Sanitize labels
-        labels = {
-            "agent_id": AGENT_ID,
-            **{k.replace("/", "_"): v for k, v in payload_dict.items()}
-        }
+        # Labels
+        labels = {k.replace("/", "_"): v for k, v in payload_dict.items()}
 
         # Get or create a Gauge with the appropriate labels
         gauge = get_or_create_gauge(metric, metric_doc, labels.keys())
@@ -98,16 +95,17 @@ def context_listener(data: Sample):
         # Extract metric name and service name from the key expression
         topic_parts = key_expr.split("/")
         context = topic_parts[-1]
+        metric = "colmena_context_metric"
         context_doc = f"Context Metric for {context}"
 
         # Labels
         labels = {
-            "agent_id": AGENT_ID,
+            "context": context,
             **payload_dict,
         }
 
         # Get or create a Gauge with the appropriate labels
-        gauge = get_or_create_gauge(context, context_doc, labels.keys())
+        gauge = get_or_create_gauge(metric, context_doc, labels.keys())
 
         # Update Prometheus metric with dynamic labels
         gauge.labels(

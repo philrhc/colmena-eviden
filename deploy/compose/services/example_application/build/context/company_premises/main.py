@@ -1,4 +1,4 @@
-from example_application import CompanyPremises
+from example_cameraprocessors import CompanyPremises
 
 
 if __name__ == '__main__':

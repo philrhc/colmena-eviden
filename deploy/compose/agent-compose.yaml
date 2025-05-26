@@ -6,7 +6,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      DOCKER_SERVER: "localhost:5000"
+      DOCKER_SERVER: ""
       AGENT_ID: ${AGENT_ID}
     security_opt:
       - seccomp:unconfined
@@ -73,6 +73,35 @@ services:
     restart: always
     ports:
       - 9100:9100
+  dsm:
+    container_name: dsm-bsc
+    image: prhcatbsc/dsm:latest
+    entrypoint: 
+    - /dsmexec
+    environment:
+      ZENOH_URL: "zenoh-router:8000"
+      AGENT_ID: "${AGENT_ID}"
+    ports:
+      - 50551:50551
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+
+  role-selector:
+    container_name: role-selector
+    image: prhcatbsc/role-selector:latest
+    environment:
+      DSM_URL: "http://dsm:50551"
+      ZENOH_URL: "zenoh-router:8000"
+      AGENT_ID: "${AGENT_ID}"
+      HARDWARE: "${HARDWARE}"
+    ports:
+      - 5555:5555
+
+  zenoh-client:
+    container_name: zenoh-client
+    image: prhcatbsc/zenoh-client:latest
+    environment: 
+      ZENOH_ROUTER: "tcp/zenoh-router:7447"
 
 volumes:
   prometheus-data:

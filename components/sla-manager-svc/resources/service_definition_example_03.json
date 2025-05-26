@@ -1,0 +1,25 @@
+{
+    "id": {
+        "value": "App01"
+    },
+    "dockerContextDefinitions": [
+        {
+            "id": "company_premises",
+            "imageId": "company_premises:latest"
+        }
+    ],
+    "kpis": [],
+    "dockerRoleDefinitions": [
+        {
+            "id": "Getter",
+            "imageId": "getter:latest",
+            "hardwareRequirements": [
+                "GETTER"
+            ],
+            "kpis": [{
+                "query": "avg_over_time(App01_processing_time[5m]) < 150",
+                "scope": "company_premises/building=."
+            }]
+        }
+    ]
+}

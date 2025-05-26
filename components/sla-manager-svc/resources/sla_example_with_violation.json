@@ -1,0 +1,57 @@
+{
+    "id": "ExampleApplication-XWBnySXE26VFnNcv429jn5",
+    "name": "ExampleApplication",
+    "state": "started",
+    "assessment": {
+        "first_execution": "2025-04-07T11:17:13.6064087+01:00",
+        "last_execution": "2025-04-07T11:17:13.6064087+01:00",
+        "guarantees": {
+            "Processing": {
+                "first_execution": "2025-04-07T11:17:13.6064087+01:00",
+                "last_execution": "2025-04-07T11:17:13.6064087+01:00",
+                "last_values": {
+                    "go_memstats_frees_total": {
+                        "key": "go_memstats_frees_total",
+                        "action": "",
+                        "namespace": "",
+                        "value": 514512460,
+                        "datetime": "2025-04-07T11:17:13.614+01:00"
+                    }
+                },
+                "last_violation": {
+                    "id": "",
+                    "agreement_id": "ExampleApplication-XWBnySXE26VFnNcv429jn5",
+                    "guarantee": "Processing",
+                    "action": "",
+                    "datetime": "2025-04-07T11:17:13.614+01:00",
+                    "constraint": "[go_memstats_frees_total] \u003C 50000",
+                    "values": [{
+                            "key": "go_memstats_frees_total",
+                            "action": "",
+                            "namespace": "",
+                            "value": 514512460,
+                            "datetime": "2025-04-07T11:17:13.614+01:00"
+                        }
+                    ],
+                    "importanceName": "Default",
+                    "importance": -1,
+                    "appID": "ExampleApplication-XWBnySXE26VFnNcv429jn5"
+                }
+            }
+        }
+    },
+    "creation": "2025-04-07T11:16:33.2662685+01:00",
+    "expiration": "2026-04-07T11:16:33.2662685+01:00",
+    "details": {
+        "guarantees": [{
+                "name": "Processing",
+                "constraint": "[go_memstats_frees_total] \u003C 50000",
+                "query": "[go_memstats_frees_total] \u003C 50000",
+                "scope": "",
+                "scopeTemplate": ""
+            }
+        ]
+    },
+    "total_executions": 2,
+    "total_violations": 2
+}

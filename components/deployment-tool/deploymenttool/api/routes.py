@@ -64,6 +64,18 @@ async def health_check():
 def get_log(filename: str):
     """
     Endpoint to retrieve a log file.
+
+    Example:
+    
+        If the image being built is:
+            <user>/colmena-sensing:latest
+
+        Then the corresponding log filename might be:
+            colmena-sensing_latest_build.log
+
+        This file would be accessible via:
+            http://<host>:<port>/logs/colmena-sensing_latest_build.log
+
     """
     log_path = os.path.join(LOGS_DIR, filename)
     if os.path.exists(log_path):

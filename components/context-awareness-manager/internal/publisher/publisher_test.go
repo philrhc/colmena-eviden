@@ -48,7 +48,7 @@ func TestPublishContextClassification(t *testing.T) {
 	publisher := NewPublisher(server.URL)
 
 	// Call PublishContextClassification with test data
-	err := publisher.PublishContextClassification("testKey", "testValue")
+	err := publisher.PublishContextClassification("testKey", `{"value":"testValue"}`)
 	assert.NoError(t, err, "PublishContextClassification should not return an error")
 }
 

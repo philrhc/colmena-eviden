@@ -6,6 +6,12 @@ ENV GF_ENABLE_GZIP=true
 ENV GF_USERS_DEFAULT_THEME=system
 ENV GF_PANELS_DISABLE_SANITIZE_HTML=true
 ENV GF_ANALYTICS_CHECK_FOR_UPDATES=false
+
+#Install Plugin for SLA Panel
+ENV GF_INSTALL_PLUGINS="yesoreyeram-infinity-datasource"
+ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED="yesoreyeram-infinity-datasource"
+ENV GF_FEATURE_TOGGLES_DATACONNECTIONSCONSOLE=true
+
 # Explore
 ENV GF_EXPLORE_ENABLED=true
 
@@ -117,9 +123,12 @@ RUN sed -i 's|\[{target:"_blank",id:"documentation".*grafana_footer"}\]|\[\]|g' 
     sed -i 's|(0,t.jsx)(u.I,{tooltip:"Switch to old dashboard page",icon:"apps",onClick:()=>{s.Ny.partial({scenes:!1})}},"view-in-old-dashboard-button")|null|g' /usr/share/grafana/public/views/index.html && \
     sed -i 's|.push({target:"_blank",id:"version",text:`${..edition}${.}`,url:..licenseUrl,icon:"external-link-alt"})||g' /usr/share/grafana/public/views/index.html
 
+#Install Infinity datasource for SLA Panel
+RUN grafana-cli plugins install yesoreyeram-infinity-datasource
+#RUN chown -R grafana:grafana /usr/share/grafana/public/app/plugins/yesoreyeram-infinity-datasource
 
 # Disable Connections
-RUN sed -i 's|# feature2 = false|dataConnectionsConsole = false|g' /usr/share/grafana/conf/defaults.ini
+#RUN sed -i 's|# feature2 = false|dataConnectionsConsole = false|g' /usr/share/grafana/conf/defaults.ini
 
 EXPOSE 3000
 
