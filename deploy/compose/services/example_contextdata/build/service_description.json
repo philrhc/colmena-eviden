@@ -26,8 +26,8 @@
             ],
             "kpis": [
                 {
-                    "query": "examplecontextdata/processing_time[5s] < 1",
-                    "scope": "company_premises/building = ."
+                    "query": "examplecontextdata/processing_time[5s] < 20",
+                    "scope": "company_premises/building=."
                 }
             ]
         }
