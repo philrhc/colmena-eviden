@@ -20,7 +20,6 @@ package publisher
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -68,15 +67,9 @@ func (z *zenohPublisher) sendHTTPRequest(method, url string, body []byte) (*http
 func (z *zenohPublisher) PublishContextClassification(key string, value string) error {
 	// Construct the URL using the provided key
 	url := fmt.Sprintf("%s/%s", z.zenohURL, key)
-	// Create the JSON body with the provided value
-	data := map[string]string{"value": value}
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return fmt.Errorf("error converting data to JSON: %v", err)
-	}
 
-	logrus.Infof("Sending PUT request to %s with body %s", url, jsonData)
-	resp, err := z.sendHTTPRequest(http.MethodPut, url, jsonData)
+	logrus.Infof("Sending PUT request to %s with body %s", url, value)
+	resp, err := z.sendHTTPRequest(http.MethodPut, url, []byte(value))
 	if err != nil {
 		return err
 	}

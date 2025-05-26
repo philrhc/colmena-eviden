@@ -1,22 +1,4 @@
 /*
-  COLMENA-DESCRIPTION-SERVICE
-  Copyright © 2024 EVIDEN
-  
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-  http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  
-  This work has been implemented within the context of COLMENA project.
-*/
-/*
 Copyright © 2024 EVIDEN
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +22,11 @@ import (
 	"colmena/sla-management-svc/app/assessment/monitor"
 	"colmena/sla-management-svc/app/common/logs"
 	"colmena/sla-management-svc/app/model"
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -62,7 +48,6 @@ type App struct {
 	SslEnabled  bool
 	SslCertPath string
 	SslKeyPath  string
-	externalIDs bool
 	validator   model.Validator
 }
 
@@ -70,12 +55,7 @@ func New(config assessment.Config, repository model.IRepository, validator model
 	a := App{
 		Repository: repository,
 		Monitor:    monitor,
-		/*Port:        config.GetString(portPropertyName),
-		SslEnabled:  config.GetBool(enableSslPropertyName),
-		SslCertPath: config.GetString(sslCertPathPropertyName),
-		SslKeyPath:  config.GetString(sslKeyPathPropertyName),
-		externalIDs: config.GetBool(utils.ExternalIDsPropertyName),*/
-		validator: validator,
+		validator:  validator,
 	}
 
 	//a.initialize(repository)
@@ -123,24 +103,25 @@ func (a *App) InitializeRESTAPI() {
 			public.GET("/", responseNotImplementedFunc)
 
 			// sla
-			public.POST("/sla", a.CreateSLAv2)
-			public.GET("/sla", a.GetSLAs)
+			public.POST("/sla", a.CreateSLA)
 			public.GET("/sla/:id", a.GetSLA)
 			public.DELETE("/sla/:id", a.DeleteSLA)
+			// slas
+			public.GET("/slas", a.GetSLAs)
+			public.GET("/slas/:id", a.GetSLAsByServiceId)
+			public.DELETE("/slas/:id", responseNotImplementedFunc)
 
 			// query metrics
 			// api/v1/query?metric=<METRIC>&path=<PATH>
 			public.GET("/query", a.Query)
 
+			// TESTs endpoints
 			// force violation
 			public.POST("/sla/violation/:fid", responseNotImplementedFunc)
+			// tests notifier
+			public.POST("/sla/violation", responseNotImplementedFunc)
 		}
 	}
-
-	// swagger
-	// a.Router.Static("/swaggerui", "./rest-api/swaggerui/")
-	// TLS
-	//r.RunTLS(":443", "resources/sec/server.crt", "resources/sec/server.key")
 
 	/////////////////////////////////////////////////////////////////
 	// start server: 8333 (default)
@@ -168,33 +149,29 @@ func (a *App) InitializeRESTAPI() {
 
 	/////////////////////////////////////////////////////////////////
 	// stop server:
-	/*
-		// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
-		quit := make(chan os.Signal)
-		// kill (no param) default send syscall.SIGTERM
-		// kill -2 is syscall.SIGINT
-		// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-		<-quit
 
-		log.Info("..............................................................................")
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	// kill (no param) default send syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	<-quit
 
-		// close DB
-		//db.CloseConnection()
+	logs.GetLogger().Info("..............................................................................")
+	logs.GetLogger().Info(pathLOG + "[InitializeRESTAPI] Shutting down server ...")
 
-		log.Info(pathLOG + "[InitializeRESTAPI] Shutting down server ...")
+	// The context is used to inform the server it has 5 seconds to finish the request it is currently handling
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-		// The context is used to inform the server it has 5 seconds to finish the request it is currently handling
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		logs.GetLogger().Error("Shutdown error: " + err.Error())
+	}
 
-		if err := srv.Shutdown(ctx); err != nil {
-			log.Error("Shutdown error: " + err.Error())
-		}
+	time.Sleep(1 * time.Second)
+	logs.GetLogger().Info(pathLOG + "[InitializeRESTAPI] Terminated")
 
-		time.Sleep(1 * time.Second)
-		log.Info(pathLOG + "[InitializeRESTAPI] Terminated")
-	*/
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -285,28 +262,6 @@ func delete(c *gin.Context, m string, f func(string) error) {
 	}
 }
 
-// violation
-func violation(c *gin.Context, m string, f func(string) error) {
-	fid := c.Param("fid")
-
-	err := f(fid)
-	if err != nil {
-		responseError(c, m, "Error creating violation object: "+err.Error())
-	} else {
-		responseOk(c, m, "Violation created", http.StatusOK, nil)
-	}
-}
-
-// violationsList
-func violationsList(c *gin.Context, m string, f func() error) {
-	err := f()
-	if err != nil {
-		responseError(c, m, "Error creating violations list object: "+err.Error())
-	} else {
-		responseOk(c, m, "Violations list created", http.StatusOK, nil)
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // API METHODS:
 
@@ -335,24 +290,9 @@ func (a *App) Query(c *gin.Context) {
 }
 
 /*
-CreateSLA creates a SLA passed by REST params
-*/
-func (a *App) CreateSLA(c *gin.Context) {
-	var qos model.SLA
-
-	create(c, "CreateSLA",
-		func() error {
-			return c.ShouldBindJSON(&qos)
-		},
-		func() (model.Identity, error) {
-			return a.Repository.CreateSLA(&qos)
-		})
-}
-
-/*
 CreateSLAv2 creates multiple SLAs passed by REST params
 */
-func (a *App) CreateSLAv2(c *gin.Context) {
+func (a *App) CreateSLA(c *gin.Context) {
 	slas, err := model.InputSLAModelToSLAModel(c)
 	if err != nil {
 		responseError(c, "CreateSLA", "Error decoding input: "+err.Error())
@@ -378,7 +318,7 @@ func (a *App) CreateSLAv2(c *gin.Context) {
 		str2 := fmt.Sprintf("%#v", resSlas)
 		responseError(c, "CreateSLA", "Error creating SLA(s): [slas = "+str2+"]; [errors = "+str1+"]")
 	} else {
-		responseOk(c, "CreateSLA", "SLA(s) created", http.StatusOK, nil)
+		responseOk(c, "CreateSLA", "SLA(s) created", http.StatusOK, resSlas)
 	}
 
 }
@@ -389,6 +329,15 @@ GetSLAs return all SLAs in db
 func (a *App) GetSLAs(c *gin.Context) {
 	getAll(c, "GetSLAs", func() (interface{}, error) {
 		return a.Repository.GetSLAs()
+	})
+}
+
+/*
+GetSLAsByServiceId return all SLAs from a service in db
+*/
+func (a *App) GetSLAsByServiceId(c *gin.Context) {
+	get(c, "GetSLAsByServiceId", func(id string) (interface{}, error) {
+		return a.Repository.GetSLAsByName(id)
 	})
 }
 
