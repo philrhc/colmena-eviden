@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -104,7 +105,28 @@ func (docker *DockerConnector) PullImage(ctx context.Context, imageName string) 
 	}
 	defer out.Close()
 
-	logrus.Infof("Image %s pulled successfully.\n", imageName)
+	type DockerPullStatus struct {
+		Status   string `json:"status"`
+		Progress string `json:"progress"`
+		ID       string `json:"id"`
+	}
+
+	decoder := json.NewDecoder(out)
+	for {
+		var status DockerPullStatus
+		if err := decoder.Decode(&status); err == io.EOF {
+			break
+		} else if err != nil {
+			logrus.Warnf("Error decoding pull status: %v", err)
+			break
+		}
+		if status.ID != "" {
+			logrus.Infof("[%s] %s %s", status.ID, status.Status, status.Progress)
+		} else {
+			logrus.Infof("%s", status.Status)
+		}
+	}
+
 	return nil
 }
 
@@ -113,6 +135,9 @@ func (docker *DockerConnector) CreateAndStartContainer(ctx context.Context, imag
 	// Define the container configuration
 	config := &container.Config{
 		Image: imageName,
+		Env: []string{
+			"AGENT_ID=" + os.Getenv("AGENT_ID"),
+		},
 	}
 	if len(cmd) > 0 {
 		config.Cmd = cmd

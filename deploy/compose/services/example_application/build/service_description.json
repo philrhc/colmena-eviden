@@ -1,0 +1,26 @@
+{
+    "id": {
+        "value": "ExampleApplication"
+    },
+    "dockerContextDefinitions": [
+        {
+            "id": "company_premises",
+            "imageId": "json_company_premises"
+        }
+    ],
+    "kpis": [],
+    "dockerRoleDefinitions": [
+        {
+            "id": "Sensing",
+            "imageId": "colmena-sensing",
+            "hardwareRequirements": [],
+            "kpis": []
+        },
+        {
+            "id": "Processing",
+            "imageId": "colmena-processing",
+            "hardwareRequirements": [],
+            "kpis": []
+        }
+    ]
+}

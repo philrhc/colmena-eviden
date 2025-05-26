@@ -23,6 +23,6 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'run_app=app.rest_app:serve',
+            'run_app=deploymenttool.main:serve',
             ]},
 )
