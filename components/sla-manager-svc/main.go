@@ -1,22 +1,4 @@
 /*
-  COLMENA-DESCRIPTION-SERVICE
-  Copyright © 2024 EVIDEN
-  
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-  http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  
-  This work has been implemented within the context of COLMENA project.
-*/
-/*
 Copyright © 2024 EVIDEN
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,16 +24,13 @@ import (
 	"colmena/sla-management-svc/app/assessment/monitor/prometheus"
 	"colmena/sla-management-svc/app/assessment/monitor/testadapter"
 	"colmena/sla-management-svc/app/assessment/notifier"
-	grpc_notifier "colmena/sla-management-svc/app/assessment/notifier/grpc"
 	"colmena/sla-management-svc/app/assessment/notifier/lognotifier"
 	"colmena/sla-management-svc/app/assessment/notifier/rest"
 	"colmena/sla-management-svc/app/common/cfg"
 	"colmena/sla-management-svc/app/common/logs"
 	"colmena/sla-management-svc/app/model"
 	"colmena/sla-management-svc/app/repositories/memrepository"
-	grpc "colmena/sla-management-svc/protobuf/server"
 	restAPI "colmena/sla-management-svc/rest-api"
-	"sync"
 
 	"os"
 	"strings"
@@ -65,21 +44,29 @@ const pathLOG string = "SLA > "
 
 /*
 Main function. Environment variables used by the SLA & QoS Manager:
+  - AGENT_ID (e.g., "agente01")
   - PROMETHEUS_ADDRESS (e.g., "http://localhost:9090")
   - MONITORING_ADAPTER (e.g., "prometheus")
   - NOTIFIER_ADAPTER (e.g., "rest_endpoint", "rpc")
   - NOTIFICATION_ENDPOINT (e.g., "http://localhost:10090")
-  - GRPC_PORT (e.g., "8099")
+  - CONTEXT_ZENOH_ENDPOINT (e.g., "http://192.168.137.47:8000/dockerContextDefinitions/**")
+  - COMPOSE_PROJECT_NAME (e.g., "sensor")
+  - ASSESSMENT_X
+  - ASSESSMENT_Y
+  - ASSESSMENT_Z
 */
 func main() {
 	// tests: environment variables
+	//os.Setenv("AGENT_ID", "agente01")
 	//os.Setenv("MONITORING_ADAPTER", "prometheus")
-	//os.Setenv("PROMETHEUS_ADDRESS", "http://192.168.137.47:9090") //"http://192.168.137.25:9091") // http://localhost:9090
-	//os.Setenv("NOTIFIER_ADAPTER", "rest_endpoint")                // "grpc"
-	//os.Setenv("NOTIFICATION_ENDPOINT", "http://localhost:10090")  // "localhost:8099"
-	//os.Setenv("GRPC_PORT", "8099")
+	//os.Setenv("PROMETHEUS_ADDRESS", "http://192.168.137.47:9090")                    //"http://192.168.137.25:9091") // http://localhost:9090
+	//os.Setenv("NOTIFIER_ADAPTER", "rest_endpoint")                                   // "grpc"
+	//os.Setenv("NOTIFICATION_ENDPOINT", "http://localhost:8080/api/v1/sla/violation") // "localhost:8099"
+	//os.Setenv("CONTEXT_ZENOH_ENDPOINT", "http://192.168.137.47:8000")
+	//os.Setenv("CONTEXT_ZENOH_CONTEXTS", "colmena/contexts")
+	//os.Setenv("COMPOSE_PROJECT_NAME", "ColmenaAgent1")
 
-	logs.GetLogger().Info("Starting SLA & QoS Manager [version: v1.0.0; date: 2024.12.17; id: 1] ...")
+	logs.GetLogger().Info("Starting SLA & QoS Manager [2025.05.06 - 1] ...")
 
 	// main configuration
 	// variables are set through environment variables (i.e. using Kubernetes or Docker deployment files)
@@ -112,34 +99,19 @@ func main() {
 		Notifier:  notifier,
 		Transient: trasientTime,
 	}
+
 	go createValidationThread(checkPeriod, aCfg) // assessment thread
 	time.Sleep(2 * time.Second)
 
-	// servers:
-	var wg sync.WaitGroup
+	go createContextCheckThread(checkPeriod, aCfg, config) // context check thread
+	time.Sleep(2 * time.Second)
 
 	// REST API server - thread
 	a, _ := restAPI.New(aCfg, repo, validater, adapter)
 	logs.GetLogger().Info(pathLOG + "Initializing SLA REST API server [THREAD] ...")
-	wg.Add(1)
-	go a.InitializeRESTAPI() // rest api thread
-	time.Sleep(2 * time.Second)
-
-	// gRPC server - thread
-	grpc_port := os.Getenv("GRPC_PORT")
-
-	if grpc_port != "" {
-		logs.GetLogger().Info(pathLOG + "Initializing gRPC server [THREAD] ...")
-		wg.Add(1)
-
-		//go server.CreateServer(&wg, "8099")
-		go grpc.InitializegRPCServer(&wg, repo)
-		time.Sleep(2 * time.Second)
-	}
+	a.InitializeRESTAPI() // rest api thread
 
 	logs.GetLogger().Info("\t-----------------------------------------------------------------")
-
-	wg.Wait()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,10 +133,6 @@ func buildNotifierAdapter(config *viper.Viper) notifier.ViolationNotifier {
 	case "rest_endpoint":
 		logs.GetLogger().Info(pathLOG + "[Notifier Adapter] Using REST-ENDPOINT notifier adapter ...")
 		return rest.New(config)
-
-	case "grpc":
-		logs.GetLogger().Info(pathLOG + "[Notifier Adapter] Using gRPC notifier adapter ...")
-		return grpc_notifier.New(config)
 
 	default:
 		logs.GetLogger().Warn(pathLOG + "[Notifier Adapter] Using Default Notifier (no subscriber) ...")
@@ -200,19 +168,29 @@ func buildMonitoringAdapter(config *viper.Viper) monitor.MonitoringAdapter {
 	}
 }
 
+// set config value
+func setConfigValue(config *viper.Viper, property_name string, default_value string) {
+	if os.Getenv(property_name) == "" {
+		config.SetDefault(property_name, default_value)
+	} else {
+		config.SetDefault(property_name, os.Getenv(property_name))
+	}
+}
+
 /*
 Creates the main Viper configuration
 */
 func createMainConfig() *viper.Viper {
-	logs.GetLogger().Info(pathLOG + "[Configuration] Generating QA Agent configuration values (based on Viper) ...")
+	logs.GetLogger().Info(pathLOG + "[Configuration] Generating Agent configuration values (based on Viper) ...")
 
-	logs.GetLogger().Debug(pathLOG + "[Configuration] Defined QA Agent environment variables:")
-	logs.GetLogger().Debug(pathLOG + "    Repository Adapter ..... " + os.Getenv(cfg.RepositoryAdapterPropertyName))
-	logs.GetLogger().Debug(pathLOG + "    Notifier Adapter ....... " + os.Getenv(cfg.NotifierAdapterPropertyName))
-	logs.GetLogger().Debug(pathLOG + "    Monitoring Adapter ..... " + os.Getenv(cfg.MonitoringAdapterPropertyName))
-	logs.GetLogger().Debug(pathLOG + "    Cluster Key ............ " + os.Getenv(cfg.ClusterKeyPropertyName))
-	logs.GetLogger().Debug(pathLOG + "    Check Period Time ...... " + os.Getenv(cfg.CheckPeriodPropertyName))
-	logs.GetLogger().Debug(pathLOG + "    Transient Time ......... " + os.Getenv(cfg.TransientTimePropertyName))
+	logs.GetLogger().Debug(pathLOG + "[Configuration] Defined Agent environment variables:")
+	logs.GetLogger().Debug(pathLOG + "    Compose Project Name ..... " + os.Getenv(cfg.ComposeProjectPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Repository Adapter ....... " + os.Getenv(cfg.RepositoryAdapterPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Notifier Adapter ......... " + os.Getenv(cfg.NotifierAdapterPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Monitoring Adapter ....... " + os.Getenv(cfg.MonitoringAdapterPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Check Period Time ........ " + os.Getenv(cfg.CheckPeriodPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Context Zenoh URL ........ " + os.Getenv(cfg.ContextZenohEndpointPropertyName))
+	logs.GetLogger().Debug(pathLOG + "    Contexts path ............ " + os.Getenv(cfg.ContextZenohContextsPropertyName))
 
 	// new viper.Viper - CONFIGURATION OBJECT
 	config := viper.New()
@@ -221,46 +199,34 @@ func createMainConfig() *viper.Viper {
 
 	// QAA CONFIGURATION:
 	logs.GetLogger().Info(pathLOG + "[Configuration] Setting configuration values ...")
+
 	// CheckPeriod
-	if os.Getenv(cfg.CheckPeriodPropertyName) == "" {
-		config.SetDefault(cfg.CheckPeriodPropertyName, cfg.DefaultCheckPeriod)
-	} else {
-		config.SetDefault(cfg.CheckPeriodPropertyName, os.Getenv(cfg.CheckPeriodPropertyName))
-	}
+	config.SetDefault(cfg.CheckPeriodPropertyName, cfg.DefaultCheckPeriod)
+
 	// TransientTime
 	config.SetDefault(cfg.TransientTimePropertyName, cfg.DefaultTransientTime)
+
 	// ADAPTERS
 	// Repository
-	if os.Getenv(cfg.RepositoryAdapterPropertyName) == "" {
-		config.SetDefault(cfg.RepositoryAdapterPropertyName, cfg.DefaultRepositoryType)
-	} else {
-		config.SetDefault(cfg.RepositoryAdapterPropertyName, os.Getenv(cfg.RepositoryAdapterPropertyName))
-	}
-	// Notifier
-	if os.Getenv(cfg.NotifierAdapterPropertyName) == "" {
-		config.SetDefault(cfg.NotifierAdapterPropertyName, cfg.DefaultNotifierType)
-	} else {
-		config.SetDefault(cfg.NotifierAdapterPropertyName, os.Getenv(cfg.NotifierAdapterPropertyName))
-	}
+	setConfigValue(config, cfg.RepositoryAdapterPropertyName, cfg.DefaultRepositoryType)
 
-	if os.Getenv(cfg.NotificationURLPropertyName) == "" {
-		config.SetDefault(cfg.NotificationURLPropertyName, cfg.DefaultNotificationURL)
-	} else {
-		config.SetDefault(cfg.NotificationURLPropertyName, os.Getenv(cfg.NotificationURLPropertyName))
-	}
+	// Notifier
+	setConfigValue(config, cfg.NotifierAdapterPropertyName, cfg.DefaultNotifierType)
+	setConfigValue(config, cfg.NotificationURLPropertyName, cfg.DefaultNotificationURL)
 
 	// Monitoring
-	if os.Getenv(cfg.MonitoringAdapterPropertyName) == "" {
-		config.SetDefault(cfg.MonitoringAdapterPropertyName, cfg.DefaultMonitoringAdapterType)
-	} else {
-		config.SetDefault(cfg.MonitoringAdapterPropertyName, os.Getenv(cfg.MonitoringAdapterPropertyName))
+	setConfigValue(config, cfg.MonitoringAdapterPropertyName, cfg.DefaultMonitoringAdapterType)
+
+	// Context Zenoh
+	setConfigValue(config, cfg.ContextZenohEndpointPropertyName, cfg.DefaultContextZenohEndpoint)
+	if !strings.HasSuffix(config.GetString(cfg.ContextZenohEndpointPropertyName), "/") {
+		config.Set(cfg.ContextZenohEndpointPropertyName, config.GetString(cfg.ContextZenohEndpointPropertyName)+"/")
 	}
-	// ClusterKey
-	if os.Getenv(cfg.ClusterKeyPropertyName) == "" {
-		config.SetDefault(cfg.ClusterKeyPropertyName, cfg.DefaultClusterKey)
-	} else {
-		config.SetDefault(cfg.ClusterKeyPropertyName, os.Getenv(cfg.ClusterKeyPropertyName))
-	}
+
+	setConfigValue(config, cfg.ContextZenohContextsPropertyName, cfg.DefaultContextZenohContexts)
+
+	// ComposeProjectPropertyName
+	setConfigValue(config, cfg.ComposeProjectPropertyName, "default_agent")
 
 	logs.GetLogger().Debug(pathLOG + "[Configuration] Returning configuration object ...")
 	return config
@@ -300,24 +266,35 @@ func logMainConfig(config *viper.Viper) {
 	adapterType := config.GetString(cfg.MonitoringAdapterPropertyName)
 	//transientTime := asSeconds(config, cfg.TransientTimePropertyName)
 
-	logs.GetLogger().Info(pathLOG + "[Main Configuration] QoS Agent initialization values:\n" +
+	logs.GetLogger().Info(pathLOG + "[Main Configuration] Agent initialization values:\n" +
 		"\t-----------------------------------------------------------------\n" +
-		//"\tConfigfile:              " + config.ConfigFileUsed() + "\n" +
 		"\tRepository type (DB):    " + repoType + "\n" +
 		"\tMonitoring Adapter type: " + adapterType + "\n" +
 		"\tNotifier type:           " + notifierType + "\n" +
-		//"\tTransient time:          " + shortDur(transientTime) + "\n" +
 		"\tCheck period:            " + shortDur(checkPeriod) + "\n" +
 		"\t-----------------------------------------------------------------")
 }
 
 // createValidationThread
 func createValidationThread(checkPeriod time.Duration, cfg assessment.Config) {
+	logs.GetLogger().Info(pathLOG + "Starting Validation Thread ...")
 	ticker := time.NewTicker(checkPeriod)
 
 	for {
 		<-ticker.C
 		cfg.Now = time.Now()
 		assessment.AssessActiveQoSDefinitions(cfg)
+	}
+}
+
+// createContextCheckThread
+func createContextCheckThread(checkPeriod time.Duration, cfg assessment.Config, vconfig *viper.Viper) {
+	logs.GetLogger().Info(pathLOG + "Starting Context Check Thread ...")
+	ticker := time.NewTicker(checkPeriod)
+
+	for {
+		<-ticker.C
+		cfg.Now = time.Now()
+		assessment.CheckPausedQoSDefinitions(cfg, vconfig)
 	}
 }

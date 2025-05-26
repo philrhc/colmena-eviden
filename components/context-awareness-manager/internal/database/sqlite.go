@@ -16,6 +16,7 @@ limitations under the License.
 
 This work has been implemented within the context of COLMENA project.
 */
+
 package database
 
 import (
@@ -186,7 +187,7 @@ func (s *SQLConnector) GetAllContexts() ([]models.DockerContextDefinition, error
 
 // InsertContext inserts a single context into the database
 func (s *SQLConnector) InsertClassification(imageID string, classification string) error {
-	_, err := s.DB.Exec(`INSERT INTO dockerContextClassifications (imageId, classification) VALUES (?, ?)`,
+	_, err := s.DB.Exec(`INSERT OR REPLACE INTO dockerContextClassifications (imageId, classification) VALUES (?, ?)`,
 		imageID, classification)
 	if err != nil {
 		return fmt.Errorf("failed to insert/update classification for %s: %v", imageID, err)

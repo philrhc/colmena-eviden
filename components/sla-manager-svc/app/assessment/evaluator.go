@@ -1,22 +1,4 @@
 /*
-  COLMENA-DESCRIPTION-SERVICE
-  Copyright © 2024 EVIDEN
-  
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-  http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  
-  This work has been implemented within the context of COLMENA project.
-*/
-/*
 Copyright © 2024 EVIDEN
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +30,7 @@ import (
 )
 
 // path used in logs
-const pathLOG string = "QAA > App > Assessment [EVALUATION PHASE] "
+const pathLOG string = "SLA > App > Assessment [EVALUATION PHASE] "
 
 /*
 Config contains the configuration for an assessment process (i.e. global config)
@@ -81,22 +63,78 @@ func AssessActiveQoSDefinitions(cfg Config) {
 
 	// Retrieve all active QoS definitions
 	qosdefs, err := repo.GetSLAsByState(model.STARTED, model.STOPPED)
+
 	if err != nil {
 		logs.GetLogger().Error(pathLOG+"[AssessActiveQoSDefinitions] Error getting active qos definitions: %s", err.Error())
 	} else {
-		logs.GetLogger().Infof(pathLOG+"[AssessActiveQoSDefinitions] [%d qos definitions to evaluate]", len(qosdefs))
-		for _, qosd := range qosdefs {
-			// do QoS assessment
-			logs.GetLogger().Debug(pathLOG + "[AssessActiveQoSDefinitions] --- QoS Assessment ---")
-			result := AssessQoS(&qosd, cfg)
+		logs.GetLogger().Infof(pathLOG+"[AssessActiveQoSDefinitions] [%d SLAs definitions to evaluate]", len(qosdefs))
 
-			// update QoSDefinition
-			repo.UpdateSLA(&qosd)
+		grouped_qosdefs, err := groupSLAsByServiceId(qosdefs, repo)
+		if err == nil {
 
-			if not != nil && len(result.Violated) > 0 {
-				// notify violations
-				not.NotifyViolations(&qosd, &result)
+			var violations []model.OutputSLA // list of all violations
+			var statuses []model.OutputSLA   // list of all violations
+
+			// iterate SLA evaluation results
+			for _, qosdefs2 := range grouped_qosdefs {
+				if len(qosdefs2) > 0 {
+					logs.GetLogger().Infof(pathLOG + "[AssessActiveQoSDefinitions] Evaluating service [" + qosdefs2[0].Name + "]")
+
+					for _, qosd := range qosdefs2 {
+						if qosd.State != model.STARTED {
+							logs.GetLogger().Error(pathLOG + "[AssessActiveQoSDefinitions] SLA not started")
+						} else {
+							// do QoS assessment
+							logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] SLA Assessment ", qosd.Id)
+
+							result, totalResults := AssessQoS(&qosd, cfg)
+							qosd.Assessment.TotalExecutions += 1
+
+							// violation?
+							violation := not != nil && len(result.Violated) > 0
+
+							if violation {
+								qosd.Assessment.TotalViolations += 1
+								qosd.Assessment.Violated = true
+
+								violation_result := GenerateViolationOutput(qosd, result)
+								if violation_result.ServiceId != "" {
+									violations = append(violations, violation_result)
+								}
+
+							} else {
+								qosd.Assessment.Violated = false
+							}
+
+							// check and set violation levels
+							checkViolationLevel(&qosd, totalResults)
+
+							// notify violations or status
+							if violation {
+								//not.NotifyViolations(&qosd, &result)
+							} else {
+								not.NotifyStatus(&qosd, &result)
+							}
+
+							// update SLA
+							repo.UpdateSLA(&qosd)
+						}
+					}
+				} else {
+					logs.GetLogger().Error(pathLOG + "[AssessActiveQoSDefinitions] Error: emty service SLA found!")
+				}
 			}
+
+			if len(violations) > 0 {
+				not.NotifyAllViolations(violations)
+			}
+
+			if len(statuses) > 0 {
+				// TODO send all notifications
+
+			}
+		} else {
+			logs.GetLogger().Error(pathLOG+"[AssessActiveQoSDefinitions] Error getting SLAs by id: %s", err.Error())
 		}
 	}
 }
@@ -115,10 +153,7 @@ The output is:
 The function results are not persisted. The output must be persisted/handled accordingly.
 E.g.: QoSDefinition and Violations must be persisted to DB. Violations must be notified to observers
 */
-func AssessQoS(a *model.SLA, cfg Config) amodel.Result {
-	var result amodel.Result
-	var err error
-
+func AssessQoS(a *model.SLA, cfg Config) (amodel.Result, int) {
 	now := cfg.Now
 
 	if a.Expiration != nil && a.Expiration.Before(now) {
@@ -126,18 +161,27 @@ func AssessQoS(a *model.SLA, cfg Config) amodel.Result {
 		logs.GetLogger().Debug(pathLOG + "[AssessQoS] QoS with ID [" + a.Id + "] has EXPIRED")
 	}
 
+	totalResults := 0
 	if a.State == model.STARTED {
 		logs.GetLogger().Debug(pathLOG+"[AssessQoS] Assessing QoS with ID: ", a.Id)
 
 		// evaluates the guarantee terms defined in the QoS definition
-		result, err = EvaluateGuaranteeTerms(a, cfg)
+		result, t, err := EvaluateGuaranteeTerms(a, cfg)
 		if err != nil {
 			logs.GetLogger().Warn(pathLOG + "[AssessQoS] Error evaluating QoSDefinition " + a.Id + ": " + err.Error())
-			return result
+			return amodel.Result{}, 0
 		}
 		updateAssessment(a, result, now) // updates QoSDefinition with last results
+		totalResults = t
+
+		if totalResults > 0 {
+			logs.GetLogger().Debug(pathLOG+"[AssessQoS] QoS with ID ["+a.Id+"] has VIOLATIONS: ", result)
+		}
+
+		return result, totalResults
 	}
-	return result
+
+	return amodel.Result{}, totalResults
 }
 
 /*
@@ -145,7 +189,7 @@ EvaluateGuaranteeTerms evaluates the guarantee terms of a QoS definition. The me
 The MonitoringAdapter must feed the process correctly (e.g. if the constraint of a guarantee term is of the type "A>B && C>D", the
 MonitoringAdapter must supply pairs of values).
 */
-func EvaluateGuaranteeTerms(a *model.SLA, cfg Config) (amodel.Result, error) {
+func EvaluateGuaranteeTerms(a *model.SLA, cfg Config) (amodel.Result, int, error) {
 	ma := cfg.Adapter.Initialize(a)
 	now := cfg.Now
 
@@ -156,12 +200,14 @@ func EvaluateGuaranteeTerms(a *model.SLA, cfg Config) (amodel.Result, error) {
 	}
 	gts := a.Details.Guarantees
 
+	totalResults := 0
+
 	for _, gt := range gts {
 		// evaluates a guarantee term of the QoS Definition
-		failed, lastvalues, err := EvaluateGuarantee(a, gt, ma, cfg)
+		failed, lastvalues, _, err := EvaluateGuarantee(a, gt, ma, cfg)
 		if err != nil {
 			logs.GetLogger().Warn(pathLOG + "[EvaluateGuaranteeTerms] Error evaluating expression " + gt.Constraint + ": " + err.Error())
-			return amodel.Result{}, err
+			return amodel.Result{}, 0, err
 		}
 
 		if len(failed) > 0 {
@@ -172,46 +218,37 @@ func EvaluateGuaranteeTerms(a *model.SLA, cfg Config) (amodel.Result, error) {
 				Violations: violations,
 			}
 			result.Violated[gt.Name] = gtResult
-		} else {
-			// NO VIOLATIONS FOUND
-			//checkWarningInterval(*a, gt, cfg, lastvalues)
-
-			var v model.Violation = model.Violation{
-				AgreementId: a.Id,
-				Guarantee:   gt.Name,
-				//Datetime:       *d,
-				//Constraint:     gt.Constraint,
-				//Values:         values,
-				//ImportanceName: "No violation",
-				//Importance:     -1,
-				AppId: a.Id, //a.Details.Service?
-				//Description:    "",
-			}
-			updateInternalMetrics(v)
+			totalResults = len(violations)
 		}
 		result.LastValues[gt.Name] = lastvalues
 		result.LastExecution[gt.Name] = now
+
+		logs.GetLogger().Debug(pathLOG+"[EvaluateGuaranteeTerms] result: ", result)
+
 	}
-	return result, nil
+	return result, totalResults, nil
 }
 
 /*
 EvaluateGuarantee evaluates a guarantee term of a QoS Definition (see EvaluateGuaranteeTerms) and returns the metrics that failed the GT constraint.
 */
-func EvaluateGuarantee(a *model.SLA, gt model.Guarantee, ma monitor.MonitoringAdapter, cfg Config) (failed []amodel.ExpressionData, last amodel.ExpressionData, err error) {
+func EvaluateGuarantee(a *model.SLA, gt model.Guarantee, ma monitor.MonitoringAdapter,
+	cfg Config) (failed []amodel.ExpressionData, last amodel.ExpressionData, totalResults int, err error) {
+
 	logs.GetLogger().Debug(pathLOG + "[EvaluateGuarantee] Evaluating Guarantee [" + gt.Name + "] of QoS with ID [" + a.Id + "]; Expression: " + gt.Constraint)
+	totalResults = 0
 	failed = make(amodel.GuaranteeData, 0, 1)
 
 	constraintParsedExpr, err := parseConstraint(gt.Constraint)
 	if err != nil {
 		logs.GetLogger().Error(pathLOG+"[EvaluateGuarantee] Error parsing expression: ", gt.Constraint)
-		return nil, nil, err
+		return nil, nil, totalResults, err
 	}
 
-	expression, err := govaluate.NewEvaluableExpression(constraintParsedExpr) //gt.Constraint)
+	expression, err := govaluate.NewEvaluableExpression(constraintParsedExpr) //constraintParsedExpr) //gt.Constraint)
 	if err != nil {
 		logs.GetLogger().Error(pathLOG+"[EvaluateGuarantee] Error parsing expression: ", constraintParsedExpr)
-		return nil, nil, err
+		return nil, nil, totalResults, err
 	}
 
 	logs.GetLogger().Debug(pathLOG + "[EvaluateGuarantee] Getting values from monitor ...")
@@ -227,7 +264,7 @@ func EvaluateGuarantee(a *model.SLA, gt model.Guarantee, ma monitor.MonitoringAd
 		aux, err := evaluateExpression(expression, value)
 		if err != nil {
 			logs.GetLogger().Warn("[EvaluateGuarantee] Error evaluating expression " + gt.Constraint + ": " + err.Error())
-			return nil, nil, err
+			return nil, nil, totalResults, err
 		}
 		if aux != nil {
 			failed = append(failed, aux)
@@ -236,7 +273,9 @@ func EvaluateGuarantee(a *model.SLA, gt model.Guarantee, ma monitor.MonitoringAd
 	if len(values) > 0 {
 		last = values[len(values)-1]
 	}
-	return failed, last, nil
+	totalResults = len(failed)
+
+	return failed, last, totalResults, nil
 }
 
 /*
@@ -264,15 +303,13 @@ func EvaluateGtViolations(a *model.SLA, gt model.Guarantee, violated amodel.Guar
 		// VIOLATION object
 		// with default violation leveles - Importance fields: (intervalName := "Default"), (interval := -1)
 		v := model.Violation{
-			AgreementId:    a.Id,
-			Guarantee:      gt.Name,
-			Datetime:       *d,
-			Constraint:     gt.Constraint,
-			Values:         values,
-			ImportanceName: "Default",
-			Importance:     -1,
-			AppId:          a.Id,
-			Description:    "",
+			AgreementId: a.Id,
+			Guarantee:   gt.Name,
+			Datetime:    *d,
+			Constraint:  gt.Constraint,
+			Values:      values,
+			AppId:       a.Id,
+			Description: "",
 		}
 
 		lastViolation = &v // update last violation value

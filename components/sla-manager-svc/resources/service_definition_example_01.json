@@ -1,0 +1,47 @@
+{
+    "id": {
+        "value": "ExampleApplication_01"
+    },
+    "dockerContextDefinitions": [
+        {
+            "id": "company_premises",
+            "imageId": "xaviercasasbsc/company_premises"
+        }
+    ],
+    "kpis": [],
+    "dockerRoleDefinitions": [
+        {
+            "id": "Processing01",
+            "imageId": "prhcatbsc/colmena-processing",
+            "hardwareRequirements": [
+                "CPU"
+            ],
+            "kpis": [{
+                "query": "[go_memstats_frees_total] < 50000",
+                "scope": ""
+            }]
+        },
+        {
+            "id": "Processing02",
+            "imageId": "prhcatbsc/colmena-processing",
+            "hardwareRequirements": [
+                "CPU"
+            ],
+            "kpis": [{
+                "query": "[go_memstats_frees_total] < 50000",
+                "scope": ""
+            }]
+        },
+        {
+            "id": "Processing03",
+            "imageId": "prhcatbsc/colmena-processing",
+            "hardwareRequirements": [
+                "CPU"
+            ],
+            "kpis": [{
+                "query": "[go_memstats_frees_total] < 50000",
+                "scope": ""
+            }]
+        }
+    ]
+}
