@@ -174,7 +174,7 @@ func TestInsertClassification(t *testing.T) {
 	classification := "critical"
 
 	// Set up the expected query and response
-	mock.ExpectExec("INSERT INTO dockerContextClassifications").
+	mock.ExpectExec("INSERT OR REPLACE INTO dockerContextClassifications").
 		WithArgs(imageID, classification).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
