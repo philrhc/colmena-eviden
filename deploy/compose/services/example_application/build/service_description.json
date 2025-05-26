@@ -5,7 +5,7 @@
     "dockerContextDefinitions": [
         {
             "id": "company_premises",
-            "imageId": "json_company_premises"
+            "imageId": "colmena-company_premises"
         }
     ],
     "kpis": [],
@@ -13,14 +13,20 @@
         {
             "id": "Sensing",
             "imageId": "colmena-sensing",
-            "hardwareRequirements": [],
+            "hardwareRequirements": [
+                "CAMERA"
+            ],
             "kpis": []
         },
         {
             "id": "Processing",
             "imageId": "colmena-processing",
-            "hardwareRequirements": [],
-            "kpis": []
+            "hardwareRequirements": [
+                "CPU"
+            ],
+            "kpis": [
+                "buffer_queue_size[100000000s] < 10"
+            ]
         }
     ]
 }
