@@ -97,7 +97,7 @@ curl -k http://localhost:8080/api/v1/ping
 #### Create SLA
 
 ```
-curl -k -X POST -d @resources/sla_02_v1.json http://localhost:8080/api/v1/sla
+curl -k -X POST -d @resources/service_definition_example_01.json http://localhost:8080/api/v1/sla
 ```
 
 #### Read SLAs

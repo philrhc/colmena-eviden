@@ -1,0 +1,49 @@
+{
+    "serviceId": "ExampleApplication",
+    "KPIs": [{
+            "RoleId": "ExampleApplication-LXZ488kYoLbWAcSxoGSrzd",
+            "Query": "[go_memstats_frees_total] \u003c 50000",
+            "value": 488942866,
+            "Threshold": "",
+            "violations": [{
+                    "id": "",
+                    "agreement_id": "ExampleApplication-LXZ488kYoLbWAcSxoGSrzd",
+                    "guarantee": "Processing",
+                    "action": "",
+                    "datetime": "2025-04-07T11:32:43.777+01:00",
+                    "constraint": "[go_memstats_frees_total] \u003c 50000",
+                    "values": [{
+                            "key": "go_memstats_frees_total",
+                            "action": "",
+                            "namespace": "",
+                            "value": 488942866,
+                            "datetime": "2025-04-07T11:32:43.777+01:00"
+                        }
+                    ],
+                    "importanceName": "Default",
+                    "importance": -1,
+                    "appID": "ExampleApplication-LXZ488kYoLbWAcSxoGSrzd"
+                }, {
+                    "id": "",
+                    "agreement_id": "ExampleApplication-LXZ488kYoLbWAcSxoGSrzd",
+                    "guarantee": "Processing",
+                    "action": "",
+                    "datetime": "2025-04-07T11:32:43.777+01:00",
+                    "constraint": "[go_memstats_frees_total] \u003c 50000",
+                    "values": [{
+                            "key": "go_memstats_frees_total",
+                            "action": "",
+                            "namespace": "",
+                            "value": 515013387,
+                            "datetime": "2025-04-07T11:32:43.777+01:00"
+                        }
+                    ],
+                    "importanceName": "Default",
+                    "importance": -1,
+                    "appID": "ExampleApplication-LXZ488kYoLbWAcSxoGSrzd"
+                }
+            ],
+            "total_violations": 1
+        }
+    ]
+}

@@ -15,4 +15,37 @@ limitations under the License.
 
 This work has been implemented within the context of COLMENA project.
 */
-package server_test
+
+package common
+
+import (
+	"os"
+	"strconv"
+)
+
+/*
+GetEnv get string environment variable value / return default if not found
+*/
+func GetEnv(name string, defaultval string) string {
+	v := os.Getenv(name)
+	if len(v) == 0 {
+		return defaultval
+	}
+	return v
+}
+
+/*
+GetEnv get int environment variable value / return default if not found
+*/
+func GetIntEnv(name string, defaultval int) int {
+	v := os.Getenv(name)
+	if len(v) == 0 {
+		return defaultval
+	}
+
+	num, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return defaultval
+	}
+	return int(num)
+}

@@ -1,22 +1,4 @@
 /*
-  COLMENA-DESCRIPTION-SERVICE
-  Copyright © 2024 EVIDEN
-  
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-  http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  
-  This work has been implemented within the context of COLMENA project.
-*/
-/*
 Copyright © 2024 EVIDEN
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,12 +36,10 @@ const pathLOG string = "SLA > Repository > Memory >  "
 type MemRepository struct {
 	agreements map[string]model.SLA
 	violations map[string]model.Violation
-	penalties  map[string]model.Penalty
 }
 
 // NewMemRepository creates a MemRepository with an initial state set by the parameters
-func NewMemRepository(agreements map[string]model.SLA, violations map[string]model.Violation,
-	penalties map[string]model.Penalty) MemRepository {
+func NewMemRepository(agreements map[string]model.SLA, violations map[string]model.Violation) MemRepository {
 	var r MemRepository
 
 	if agreements == nil {
@@ -68,21 +48,17 @@ func NewMemRepository(agreements map[string]model.SLA, violations map[string]mod
 	if violations == nil {
 		violations = make(map[string]model.Violation)
 	}
-	if penalties == nil {
-		penalties = make(map[string]model.Penalty)
-	}
 
 	r = MemRepository{
 		agreements: agreements,
 		violations: violations,
-		penalties:  penalties,
 	}
 	return r
 }
 
 // New creates a new instance of MemRepository
 func New() (MemRepository, error) {
-	return NewMemRepository(nil, nil, nil), nil
+	return NewMemRepository(nil, nil), nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -98,6 +74,18 @@ func (r MemRepository) GetSLAs() (model.SLAs, error) {
 
 	for _, value := range r.agreements {
 		result = append(result, value)
+	}
+	return result, nil
+}
+
+// GetSLAsByName gets SLAs by Name.
+func (r MemRepository) GetSLAsByName(id string) (model.SLAs, error) {
+	result := make(model.SLAs, 0, len(r.agreements))
+
+	for _, value := range r.agreements {
+		if value.Name == id {
+			result = append(result, value)
+		}
 	}
 	return result, nil
 }

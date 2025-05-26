@@ -1,22 +1,4 @@
 /*
-  COLMENA-DESCRIPTION-SERVICE
-  Copyright © 2024 EVIDEN
-  
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-  http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  
-  This work has been implemented within the context of COLMENA project.
-*/
-/*
 Copyright © 2024 EVIDEN
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,19 +29,61 @@ import (
 )
 
 /**
-	SLA model example:
+	SLA example:
 
 	{
-		"id": "d01",
-		"name": "qos-definition-name",
+		"id": "ExampleApplication-XWBnySXE26VFnNcv429jn5",
+		"name": "ExampleApplication",
 		"state": "started",
-		"creation": "2024-01-16T17:09:45Z",
-		"expiration": "2026-01-16T17:09:45Z",
+		"total_executions": 1,
+		"total_violations": 1,
+		"assessment": {
+			"first_execution": "2025-04-07T11:17:13.6064087+01:00",
+			"last_execution": "2025-04-07T11:17:13.6064087+01:00",
+			"guarantees": {
+				"Processing": {
+					"first_execution": "2025-04-07T11:17:13.6064087+01:00",
+					"last_execution": "2025-04-07T11:17:13.6064087+01:00",
+					"last_values": {
+						"go_memstats_frees_total": {
+							"key": "go_memstats_frees_total",
+							"action": "",
+							"namespace": "",
+							"value": 514512460,
+							"datetime": "2025-04-07T11:17:13.614+01:00"
+						}
+					},
+					"last_violation": {
+						"id": "",
+						"agreement_id": "ExampleApplication-XWBnySXE26VFnNcv429jn5",
+						"guarantee": "Processing",
+						"action": "",
+						"datetime": "2025-04-07T11:17:13.614+01:00",
+						"constraint": "[go_memstats_frees_total] \u003C 50000",
+						"values": [{
+								"key": "go_memstats_frees_total",
+								"action": "",
+								"namespace": "",
+								"value": 514512460,
+								"datetime": "2025-04-07T11:17:13.614+01:00"
+							}
+						],
+						"importanceName": "Default",
+						"importance": -1,
+						"appID": "ExampleApplication-XWBnySXE26VFnNcv429jn5"
+					}
+				}
+			}
+		},
+		"creation": "2025-04-07T11:16:33.2662685+01:00",
+		"expiration": "2026-04-07T11:16:33.2662685+01:00",
 		"details": {
-			"guarantees": [
-				{
-					"name": "exampleplantcare_time",
-					"constraint": "exampleplantcare/moisture[5s] > 20"
+			"guarantees": [{
+					"name": "Processing",
+					"constraint": "[go_memstats_frees_total] \u003C 50000",
+					"query": "[go_memstats_frees_total] \u003C 50000",
+					"scope": "",
+					"scopeTemplate": ""
 				}
 			]
 		}
@@ -119,6 +143,12 @@ const (
 
 	// TERMINATED is the final state of an agreement
 	TERMINATED State = "terminated"
+
+	// PAUSED is the state of an agreement temporaryly paused
+	PAUSED State = "paused"
+
+	// INVALID is the state of an agreement that is not valid
+	INVALID State = "invalid"
 )
 
 const (
@@ -132,7 +162,7 @@ const (
 var States = [...]State{STOPPED, STARTED, TERMINATED}
 
 ///////////////////////////////////////////////////////////////////////////////
-// SLA Definition
+// SLA Model
 /*
  Example:
 
@@ -145,12 +175,7 @@ var States = [...]State{STOPPED, STARTED, TERMINATED}
 		"expiration": "2026-01-16T17:09:45Z",
 		"details": {
 			"variables": []
-			"guarantees": [
-				{
-					"name": "exampleplantcare_time",
-					"constraint": "exampleplantcare/moisture[5s] > 20"
-				}
-			]
+			"guarantees": []
 		}
 	}
 
@@ -167,18 +192,12 @@ type SLA struct {
 	Creation   time.Time  `json:"creation,omitempty"`
 	Expiration *time.Time `json:"expiration,omitempty"`
 	Details    Details    `json:"details"`
-	//Guarantees []Guarantee `json:"guarantees"`
 }
 
 // Details is the struct that represents the "contract" signed by the client
 type Details struct {
-	//Provider   Provider    `json:"provider"`
-	//Client     Client      `json:"client"`
-	//Creation   time.Time   `json:"creation,omitempty"`
-	//Expiration *time.Time  `json:"expiration,omitempty"`
 	Variables  []Variable  `json:"variables,omitempty"`
 	Guarantees []Guarantee `json:"guarantees"`
-	//Service    string      `json:"service,omitempty"` // NEW FIELD (service or app id associated to the agreement)
 }
 
 // Variable gives additional information about a metric used in a Guarantee constraint
@@ -190,12 +209,40 @@ type Variable struct {
 
 // Assessment is the struct that provides assessment information
 type Assessment struct {
+	TotalExecutions int `json:"total_executions,omitempty"` // total executions
+	TotalViolations int `json:"total_violations,omitempty"` // total violations
+	/*
+		1) Primera vez que una KPI se infringe -> Level = Broken
+		2) Después de X veces [seguidas] que se ha infringido -> Level = Critical
+		3) Primera vez que una KPI se cumple [después de estar Broken] -> Level = Met
+		4) Después de Y veces [seguidas] que se ha cumplido -> Level = Desired
+		5) Sí ha cambiado de KPI met a KPI broken Z veces -> Level = Unstable
+
+		TODO: remove from json => `json:"-"`
+	*/
+	X              int                            `json:"x,omitempty"`                         // assessment violation; x (default 2)
+	XCounter       int                            `json:"x_assessment_broken_count,omitempty"` // assessment violation counter
+	Y              int                            `json:"y,omitempty"`                         // assessment met; y (default 2)
+	YCounter       int                            `json:"y_assessment_met_count,omitempty"`    // assessment met; y counter
+	Z              int                            `json:"z,omitempty"`                         // met to broken; z (default 5)
+	ZCounter       int                            `json:"z_met_to_broken_count,omitempty"`     // met to broken; z counter
+	Level          string                         `json:"level,omitempty"`                     // Broken, Critical, Met, Desired, Unstable, Unknown
+	Violated       bool                           `json:"violated,omitempty"`
 	FirstExecution time.Time                      `json:"first_execution"`
 	LastExecution  time.Time                      `json:"last_execution"`
 	MonitoringURL  string                         `json:"monitoring_url,omitempty"`
 	Guarantees     map[string]AssessmentGuarantee `json:"guarantees,omitempty"` // Guarantees may be nil. Use Assessment.SetGuarantee to create if needed.
-	Violations     int                            `json:"violations,omitempty"` // total violations
 }
+
+// Broken, Critical, Met, Desired, Unstable, Unknown
+const (
+	ASSESSMENT_LEVEL_UNKNOWN  = "Unknown"
+	ASSESSMENT_LEVEL_UNSTABLE = "Unstable"
+	ASSESSMENT_LEVEL_DESIRED  = "Desired"
+	ASSESSMENT_LEVEL_MET      = "Met"
+	ASSESSMENT_LEVEL_CRITICAL = "Critical"
+	ASSESSMENT_LEVEL_BROKEN   = "Broken"
+)
 
 // AssessmentGuarantee contain the assessment information for a guarantee term
 type AssessmentGuarantee struct {
@@ -210,11 +257,11 @@ type LastValues map[string]MetricValue
 
 // Guarantee is the struct that represents an SLO
 type Guarantee struct {
-	Name       string `json:"name"`
-	Constraint string `json:"constraint"`
-	//Penalties  []PenaltyDef    `json:"penalties,omitempty"`
-	//Importance []GuaranteeType `json:"importance,omitempty"`
-	//Actions    []ActionsDef    `json:"actions,omitempty"`
+	Name          string `json:"name"`
+	Constraint    string `json:"constraint"`
+	Query         string `json:"query"`
+	Scope         string `json:"scope"`
+	ScopeTemplate string `json:"scopeTemplate"`
 }
 
 // Aggregation gives aggregation information of a variable.
@@ -233,20 +280,6 @@ type GuaranteeType struct {
 	Constraint string `json:"constraint"`
 }
 
-// PenaltyDef is the struct that represents a penalty in case of an SLO violation
-type PenaltyDef struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-	Unit  string `json:"unit"`
-}
-
-// ActionsDef is the struct that represents an action in case of an SLO violation
-type ActionsDef struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
-	Unit  string `json:"unit"`
-}
-
 // MetricValue is the SLA representation of a metric value.
 type MetricValue struct {
 	Key       string      `json:"key"`
@@ -262,26 +295,14 @@ func (v MetricValue) String() string {
 
 // Violation is generated when a guarantee term is not fulfilled
 type Violation struct {
-	Id             string        `json:"id" bson:"_id"`
-	AgreementId    string        `json:"agreement_id"`
-	Guarantee      string        `json:"guarantee"`
-	Action         string        `json:"action"`
-	Datetime       time.Time     `json:"datetime"`
-	Constraint     string        `json:"constraint"`
-	Values         []MetricValue `json:"values"`
-	ImportanceName string        `json:"importanceName"`
-	Importance     int           `json:"importance"`
-	AppId          string        `json:"appID,omitempty"`
-	Description    string        `json:"description,omitempty"`
-}
-
-// Penalty is generated when a guarantee term is violated if the term has PenaltyDefs associated.
-type Penalty struct {
-	Id          string     `json:"id"`
-	AgreementId string     `json:"agreement_id"`
-	Guarantee   string     `json:"guarantee"`
-	Datetime    time.Time  `json:"datetime"`
-	Definition  PenaltyDef `json:"definition"`
+	Id          string        `json:"id" bson:"_id"`
+	AgreementId string        `json:"agreement_id"`
+	Guarantee   string        `json:"guarantee"`
+	Datetime    time.Time     `json:"datetime"`
+	Constraint  string        `json:"constraint"`
+	Values      []MetricValue `json:"values"`
+	AppId       string        `json:"appID,omitempty"`
+	Description string        `json:"description,omitempty"`
 }
 
 // SLAs is the type of an slice of SLA

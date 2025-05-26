@@ -1,0 +1,72 @@
+{
+    "comment": "[avg_over_time(processing_time{building='BSC'}[5s]) < 1]",
+    "id": {
+        "value": "ExampleApplication"
+    },
+    "dockerContextDefinitions": [
+        {
+            "id": "company_premises",
+            "imageId": "xaviercasasbsc/company_premises"
+        }
+    ],
+    "kpis": [],
+    "dockerRoleDefinitions": [
+        {
+            "id": "Sensing",
+            "imageId": "prhcatbsc/colmena-sensing",
+            "hardwareRequirements": [
+                "CAMERA"
+            ],
+            "kpis": []
+        },
+        {
+            "id": "Processing",
+            "imageId": "prhcatbsc/colmena-processing",
+            "hardwareRequirements": [
+                "CPU"
+            ],
+            "kpis": [{
+                "query": "go_memstats_frees_total < 50000",
+                "scope": ""
+            }]
+        },
+        {
+            "id": "test01",
+            "imageId": "",
+            "hardwareRequirements": [],
+            "kpis": [{
+                "query": "avg_over_time(processing_time[5s]) < 1",
+                "scope": "company_premises/building=."
+            }]
+        },
+        {
+            "id": "test02",
+            "imageId": "",
+            "hardwareRequirements": [],
+            "kpis": [{
+                "query": "[avg_over_time(go_goroutines[60m])] < 50000",
+                "scope": ""
+            }]
+        },
+        {
+            "id": "test03",
+            "imageId": "",
+            "hardwareRequirements": [],
+            "kpis": [{
+                "query": "[sum%20by%20(metric_name, label1)%20(colmena_total_people{metric_name='tests', label1='planta01'})] < 5",
+                "scope": ""
+                }]
+        },
+        {
+            "id": "test04",
+            "imageId": "",
+            "hardwareRequirements": [],
+            "kpis": [{
+                "query": "[sum by (metric_name, label1) (colmena_total_people{metric_name='tests', label1='planta01'})] < 5",
+                "scope": ""
+                }]
+        }
+    ]
+}
+
+
