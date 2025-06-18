@@ -12,7 +12,6 @@ ENV GF_INSTALL_PLUGINS="yesoreyeram-infinity-datasource"
 ENV GF_PLUGINS_ALLOW_LOADING_UNSIGNED="yesoreyeram-infinity-datasource"
 ENV GF_FEATURE_TOGGLES_DATACONNECTIONSCONSOLE=true
 
-
 # Explore
 ENV GF_EXPLORE_ENABLED=true
 
