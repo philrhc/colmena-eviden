@@ -1,0 +1,9 @@
+dependencies:
+- name: thanos
+  repository: oci://registry-1.docker.io/bitnamicharts
+  version: 12.15.0
+- name: grafana
+  repository: file://charts/grafana
+  version: 8.4.6
+digest: sha256:37db05f6c35ea8030d3197bc1eab2e34b403a6d4920e78e37e0d88a4b100097f
+generated: "2025-02-14T18:16:36.791523968+01:00"

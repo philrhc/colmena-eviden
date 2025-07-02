@@ -1,0 +1,95 @@
+thanos:
+  receive:
+    enabled: true
+    service:
+      grpcPort: 10901
+      httpPort: 10902
+      remoteWritePort: 19291
+      remoteWriteNodePort: 0
+    replicationFactor: 1
+    ingress:
+      ingressClassName: nginx
+      enabled: true
+      hostname: thanos-receive.192.168.137.25.nip.io
+      path: /
+      pathType: Prefix
+  query:
+    enabled: true
+    ingress:
+      ingressClassName: nginx
+      enabled: true
+      hostname: thanos-query.192.168.137.25.nip.io
+      path: /
+      pathType: Prefix
+  # dnsDiscovery:
+  #   sidecarsService: "prometheus-operated"
+  #   sidecarsNamespace: "monitoring"
+  bucketweb:
+    enabled: false
+  compactor:
+    enabled: false
+  storegateway:
+    enabled: false
+  ruler:
+    enabled: false
+  # metrics:
+  #   enabled: false
+  #   serviceMonitor:
+  #     enabled: true
+
+
+grafana:
+  ingress:
+    ingressClassName: nginx # Specify the ingress class (adjust if using a different controller)
+    enabled: true
+    path: /
+    pathType: Prefix
+    hosts:
+      - grafana.192.168.137.25.nip.io
+    extraPaths: []
+
+  image:
+    # -- The Docker registry
+    registry: registry.atosresearch.eu:18512
+    # -- Docker image repository
+    repository: grafana/custome-grafana-colmena
+    tag: "8.0"
+    pullSecrets:
+      - colmena-registry-pat
+
+  dashboards:
+    default:
+      node-dashboard:
+        file: dashboards/nodeexporter.json
+      context-dashboard:
+        file: dashboards/context.json
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: ""
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Thanos
+          type: prometheus
+          url: "http://colmena-monitoring-thanos-query.monitoring.svc.cluster.local:9090"
+          isDefault: true
+          # access: proxy
+        - name: grafana-testdata-datasource
+          type: grafana-testdata-datasource
+          isDefault: false
+        - name: SLA-API
+          type: yesoreyeram-infinity-datasource
+          
+         
