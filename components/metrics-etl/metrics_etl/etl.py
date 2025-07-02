@@ -59,6 +59,7 @@ def role_listener(data: Sample):
         topic_parts = key_expr.split("/")
         metric_name = topic_parts[-1]
         service_name = topic_parts[-2]
+        agent_id = topic_parts[-3]
         metric = f"{service_name}_{metric_name}"
         metric_doc = f"Role Metric for {metric}"
 
@@ -66,7 +67,10 @@ def role_listener(data: Sample):
         metric_value = payload_dict.pop("value", 0)
 
         # Labels
-        labels = {k.replace("/", "_"): v for k, v in payload_dict.items()}
+        labels = {
+            "agent_id": agent_id,
+            **{k.replace("/", "_"): v for k, v in payload_dict.items()}
+        }
 
         # Get or create a Gauge with the appropriate labels
         gauge = get_or_create_gauge(metric, metric_doc, labels.keys())
@@ -133,11 +137,11 @@ def start_etl():
         logger.info(f"Using Zenoh configuration file: {ZENOH_CONFIG_FILE}")
 
         # Declare subscribers
-        role_subscriber = session.declare_subscriber(f"colmena/metrics/{AGENT_ID}/**", role_listener)
+        role_subscriber = session.declare_subscriber(f"colmena/metrics/**", role_listener)
         logger.info(f"Subscribed to colmena/metrics/{AGENT_ID}/**")
 
         context_subscriber = session.declare_subscriber(f"colmena/contexts/{AGENT_ID}/**", context_listener)
-        logger.info(f"Subscribed to colmena/contexts/{AGENT_ID}/**")
+        logger.info(f"Subscribed to colmena/contexts/**")
 
         while True:
             pass  # Keeps running
