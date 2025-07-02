@@ -22,7 +22,9 @@ package main
 import (
 	"context-awareness-manager/pkg/server"
 	"os"
+	"strconv"
 	"sync"
+	"time"
 
 	_ "context-awareness-manager/docs"
 
@@ -57,6 +59,7 @@ func main() {
 	// Get environment variables with defaults
 	zenohURL := getEnv("ZENOH_URL", "http://zenoh-router:8000")
 	port := getEnv("SERVER_PORT", "8080")
+	interval := GetMonitorIntervalFromEnv()
 
 	// Initialize router
 	router, contextMonitor, dbConnection := server.InitRouter(zenohURL)
@@ -77,7 +80,7 @@ func main() {
 	go func() {
 		defer wg.Done() // Decrement the WaitGroup counter once done
 		logrus.Infof("Starting context monitoring...")
-		contextMonitor.StartMonitoring()
+		contextMonitor.StartMonitoring(interval)
 	}()
 
 	// Wait for all goroutines to finish before exiting the application
@@ -92,4 +95,14 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// GetMonitorInterval reads the interval from env and returns a time.Duration
+func GetMonitorIntervalFromEnv() time.Duration {
+	intervalStr := os.Getenv("CONTEXT_MONITOR_INTERVAL_SECONDS")
+	seconds, err := strconv.Atoi(intervalStr)
+	if err != nil || seconds <= 0 {
+		seconds = 30
+	}
+	return time.Duration(seconds) * time.Second
 }

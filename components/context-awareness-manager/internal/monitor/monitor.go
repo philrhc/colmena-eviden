@@ -33,7 +33,7 @@ import (
 // ContextMonitor defines the interface for handling Docker contexts
 type ContextMonitor interface {
 	RegisterContexts([]models.DockerContextDefinition) error
-	StartMonitoring()
+	StartMonitoring(time.Duration)
 }
 
 // contextMonitorImpl implements the ContextMonitor interface.
@@ -64,9 +64,9 @@ func (c *contextMonitorImpl) RegisterContexts(newContexts []models.DockerContext
 }
 
 // StartContextMonitoring listens for new contexts and processes them dynamically.
-func (c *contextMonitorImpl) StartMonitoring() {
+func (c *contextMonitorImpl) StartMonitoring(interval time.Duration) {
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for range ticker.C {

@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,7 +43,7 @@ func (m *MockMonitor) RegisterContexts(contexts []models.DockerContextDefinition
 }
 
 // Mock implementation of StartMonitoring method
-func (m *MockMonitor) StartMonitoring() {
+func (m *MockMonitor) StartMonitoring(interval time.Duration) {
 	// Simulate the monitoring starting...
 }
 
