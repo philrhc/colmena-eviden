@@ -565,7 +565,7 @@
           "root_selector": "",
           "source": "url",
           "type": "json",
-          "url": "http://192.168.137.47:8081/api/v1/slas",
+          "url": "http://sla-address:8081/api/v1/slas",
           "url_options": {
             "data": "",
             "method": "GET"
@@ -693,7 +693,7 @@
             "root_selector": "Response",
             "source": "url",
             "type": "json",
-            "url": "http://192.168.137.47:8081/api/v1/slas",
+            "url": "http://sla-address:8081/api/v1/slas",
             "url_options": {
               "data": "",
               "method": "GET"
