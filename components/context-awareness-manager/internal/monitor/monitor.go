@@ -33,6 +33,9 @@ import (
 // ContextMonitor defines the interface for handling Docker contexts
 type ContextMonitor interface {
 	RegisterContexts([]models.DockerContextDefinition) error
+	GetAllContexts() ([]models.DockerContextDefinition, error)
+	GetContextByID(id string) (*models.DockerContextDefinition, error)
+	DeleteContext(id string) error
 	StartMonitoring(time.Duration)
 }
 
@@ -61,6 +64,18 @@ func (c *contextMonitorImpl) RegisterContexts(newContexts []models.DockerContext
 	}
 	logrus.Infof("Successfully registered %d new contexts", len(newContexts))
 	return nil
+}
+
+func (c *contextMonitorImpl) GetAllContexts() ([]models.DockerContextDefinition, error) {
+	return c.dbConnection.GetAllContexts()
+}
+
+func (c *contextMonitorImpl) GetContextByID(id string) (*models.DockerContextDefinition, error) {
+	return c.dbConnection.GetContextByID(id)
+}
+
+func (c *contextMonitorImpl) DeleteContext(id string) error {
+	return c.dbConnection.DeleteContext(id)
 }
 
 // StartContextMonitoring listens for new contexts and processes them dynamically.

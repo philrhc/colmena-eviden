@@ -67,8 +67,17 @@ func initializeRoutes(router *mux.Router, contextHandler *controllers.ContextHan
 	// Health check route
 	router.HandleFunc("/healthcheck", controllers.HealthHandler).Methods("GET")
 
-	// Context management route
+	// --- CRUD Context routes ---
 	router.HandleFunc("/context", contextHandler.HandleContextRequest).Methods("POST")
+
+	// Read all
+	router.HandleFunc("/context", contextHandler.GetContexts).Methods("GET")
+
+	// Read by ID
+	router.HandleFunc("/context/{id}", contextHandler.GetContextByID).Methods("GET")
+
+	// Delete by ID
+	router.HandleFunc("/context/{id}", contextHandler.DeleteContext).Methods("DELETE")
 
 	// Swagger documentation route
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)

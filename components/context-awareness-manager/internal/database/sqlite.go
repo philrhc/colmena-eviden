@@ -96,7 +96,7 @@ func (s *SQLConnector) CreateTables() error {
 
 // InsertContext inserts a single context into the database
 func (s *SQLConnector) InsertContext(context models.DockerContextDefinition) error {
-	_, err := s.DB.Exec(`INSERT INTO dockerContextDefinitions (id, imageId) VALUES (?, ?)`,
+	_, err := s.DB.Exec(`INSERT OR REPLACE INTO dockerContextDefinitions (id, imageId) VALUES (?, ?)`,
 		context.ID, context.ImageID)
 	if err != nil {
 		return fmt.Errorf("failed to insert/update context ID %s: %v", context.ID, err)

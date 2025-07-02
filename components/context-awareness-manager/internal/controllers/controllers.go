@@ -25,6 +25,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 type ContextHandler struct {
@@ -70,6 +72,70 @@ func (c *ContextHandler) HandleContextRequest(w http.ResponseWriter, r *http.Req
 	}
 
 	response.Success(w, map[string]interface{}{"response": service.DockerContextDefinitions})
+}
+
+// @Summary Get all contexts
+// @Description Retrieve all Docker contexts from the database
+// @Tags Context
+// @Produce json
+// @Success 200 {array} models.DockerContextDefinition
+// @Router /context [get]
+func (c *ContextHandler) GetContexts(w http.ResponseWriter, r *http.Request) {
+	contexts, err := c.monitor.GetAllContexts()
+	if err != nil {
+		response.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	response.JSON(w, http.StatusOK, contexts)
+}
+
+// @Summary Get context by ID
+// @Description Retrieve a Docker context by its ID
+// @Tags Context
+// @Produce json
+// @Param id path string true "Context ID"
+// @Success 200 {object} models.DockerContextDefinition
+// @Router /context/{id} [get]
+func (c *ContextHandler) GetContextByID(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/context/"):]
+	ctx, err := c.monitor.GetContextByID(id)
+	if err != nil {
+		response.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+	if ctx == nil {
+		response.ERROR(w, http.StatusNotFound, fmt.Errorf("context not found"))
+		return
+	}
+	response.JSON(w, http.StatusOK, ctx)
+}
+
+// @Summary Delete context
+// @Description Delete a Docker context by ID
+// @Tags Context
+// @Produce json
+// @Param id path string true "Context ID"
+// @Success 200 {string} string "Context deleted"
+// @Router /context/{id} [delete]
+func (c *ContextHandler) DeleteContext(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	err := c.monitor.DeleteContext(id)
+	if err != nil {
+		if err.Error() == "context not found" {
+			http.Error(w, "Context not found", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+	response.JSON(w, http.StatusOK, "Context deleted")
 }
 
 // HealthHandler checks if the service is up and running.
