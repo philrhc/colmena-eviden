@@ -57,7 +57,7 @@ func GenerateViolationOutput(qos model.SLA, result amodel.Result) model.OutputSL
 				Query:           qos.Details.Guarantees[0].Query,
 				Value:           vs[0].Values[0].Value,
 				Level:           qos.Assessment.Level,
-				Threshold:       "", //qos.Details.Guarantees[0].Query,
+				Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
 				Violations:      vs,
 				TotalViolations: qos.Assessment.TotalViolations,
 			},

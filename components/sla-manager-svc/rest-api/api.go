@@ -110,6 +110,10 @@ func (a *App) InitializeRESTAPI() {
 			public.GET("/slas", a.GetSLAs)
 			public.GET("/slas/:id", a.GetSLAsByServiceId)
 			public.DELETE("/slas/:id", responseNotImplementedFunc)
+			// kpis
+			public.GET("/kpis", a.GetKPIs)
+			public.GET("/kpis/:id", a.GetKPIsByServiceId)
+			public.GET("/kpi/:id", a.GetKPI)
 
 			// query metrics
 			// api/v1/query?metric=<METRIC>&path=<PATH>
@@ -356,5 +360,50 @@ DeleteSLA deletes a SLA
 func (a *App) DeleteSLA(c *gin.Context) {
 	delete(c, "DeleteSLA", func(id string) error {
 		return a.Repository.DeleteSLA(id)
+	})
+}
+
+/*
+GetKPIs return all SLAs in db
+*/
+func (a *App) GetKPIs(c *gin.Context) {
+	getAll(c, "GetKPIs", func() (interface{}, error) {
+		l, err := a.Repository.GetSLAs()
+		if err != nil {
+			return nil, err
+		} else {
+			lout, err2 := model.SLAModelsToOutputSLAs(l)
+			return lout, err2
+		}
+	})
+}
+
+/*
+GetKPIsByServiceId return all SLAs from a service in db
+*/
+func (a *App) GetKPIsByServiceId(c *gin.Context) {
+	get(c, "GetKPIsByServiceId", func(id string) (interface{}, error) {
+		l, err := a.Repository.GetSLAsByName(id)
+		if err != nil {
+			return nil, err
+		} else {
+			lout, err2 := model.SLAModelsToOutputSLAs(l)
+			return lout, err2
+		}
+	})
+}
+
+/*
+GetKPI gets a QoS Definition by REST ID
+*/
+func (a *App) GetKPI(c *gin.Context) {
+	get(c, "GetKPI", func(id string) (interface{}, error) {
+		m, err := a.Repository.GetSLA(id)
+		if err != nil {
+			return nil, err
+		} else {
+			mout, err2 := model.SLAModelToOutputSLA(*m)
+			return mout, err2
+		}
 	})
 }

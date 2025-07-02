@@ -1,6 +1,6 @@
 {
     "id": {
-        "value": "ExampleApplication_01"
+        "value": "ExampleApplication_00"
     },
     "dockerContextDefinitions": [
         {
@@ -11,13 +11,13 @@
     "kpis": [],
     "dockerRoleDefinitions": [
         {
-            "id": "Processing01",
+            "id": "Processing00",
             "imageId": "prhcatbsc/colmena-processing",
             "hardwareRequirements": [
                 "CPU"
             ],
             "kpis": [{
-                "query": "[go_memstats_frees_total] < 50000",
+                "query": "go_memstats_frees_total > 48000",
                 "scope": ""
             }]
         }

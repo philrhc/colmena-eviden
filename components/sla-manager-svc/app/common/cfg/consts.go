@@ -77,6 +77,7 @@ const (
 
 	// COMPOSE_PROJECT_NAME
 	ComposeProjectPropertyName string = "COMPOSE_PROJECT_NAME"
+	AgentIdPropertyName        string = "AGENT_ID"
 
 	// Assessment
 	// CheckPeriodPropertyName is the name of the property CheckPeriod

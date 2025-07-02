@@ -8,7 +8,16 @@
             "imageId": "xaviercasasbsc/company_premises"
         }
     ],
-    "kpis": [],
+    "kpis": [
+        {
+            "query": "[go_memstats_frees_total] < 40000",
+            "scope": "company_premises/building=."
+        },
+        {
+            "query": "go_memstats_frees_total < 50000",
+            "scope": ""
+        }
+    ],
     "dockerRoleDefinitions": [
         {
             "id": "Processing",
@@ -17,8 +26,8 @@
                 "CPU"
             ],
             "kpis": [{
-                "query": "[go_memstats_frees_total] < 50000",
-                "scope": "company_premises/building=."
+                "query": "[go_memstats_frees_total] < 60000",
+                "scope": "company_premises/building = . "
             }]
         }
     ]

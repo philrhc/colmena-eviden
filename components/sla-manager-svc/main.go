@@ -57,7 +57,7 @@ Main function. Environment variables used by the SLA & QoS Manager:
 */
 func main() {
 	// tests: environment variables
-	//os.Setenv("AGENT_ID", "agente01")
+	//os.Setenv("AGENT_ID", "ColmenaAgent1")
 	//os.Setenv("MONITORING_ADAPTER", "prometheus")
 	//os.Setenv("PROMETHEUS_ADDRESS", "http://192.168.137.47:9090")                    //"http://192.168.137.25:9091") // http://localhost:9090
 	//os.Setenv("NOTIFIER_ADAPTER", "rest_endpoint")                                   // "grpc"
@@ -66,7 +66,7 @@ func main() {
 	//os.Setenv("CONTEXT_ZENOH_CONTEXTS", "colmena/contexts")
 	//os.Setenv("COMPOSE_PROJECT_NAME", "ColmenaAgent1")
 
-	logs.GetLogger().Info("Starting SLA & QoS Manager [2025.05.06 - 1] ...")
+	logs.GetLogger().Info("Starting SLA & QoS Manager [2025.06.23 - 1] ...")
 
 	// main configuration
 	// variables are set through environment variables (i.e. using Kubernetes or Docker deployment files)
@@ -227,6 +227,7 @@ func createMainConfig() *viper.Viper {
 
 	// ComposeProjectPropertyName
 	setConfigValue(config, cfg.ComposeProjectPropertyName, "default_agent")
+	setConfigValue(config, cfg.AgentIdPropertyName, "default_agent")
 
 	logs.GetLogger().Debug(pathLOG + "[Configuration] Returning configuration object ...")
 	return config

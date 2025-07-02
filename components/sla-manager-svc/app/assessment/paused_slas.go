@@ -293,8 +293,15 @@ SLA example:
 func getData(sla model.SLA, items []ResponseData, vconfig *viper.Viper) ResponseData {
 	context_scope := getSLAContextFromScope(sla) // e.g. "company_premises"
 	if len(context_scope) > 0 {
-		context := vconfig.GetString(cfgconst.ContextZenohContextsPropertyName) + "/" +
-			vconfig.GetString(cfgconst.ComposeProjectPropertyName) + "/" + context_scope
+		context := ""
+		if len(vconfig.GetString(cfgconst.AgentIdPropertyName)) > 0 {
+			context = vconfig.GetString(cfgconst.ContextZenohContextsPropertyName) + "/" +
+				vconfig.GetString(cfgconst.AgentIdPropertyName) + "/" + context_scope
+		} else {
+			context = vconfig.GetString(cfgconst.ContextZenohContextsPropertyName) + "/" +
+				vconfig.GetString(cfgconst.ComposeProjectPropertyName) + "/" + context_scope
+		}
+
 		// => e.g. "colmena/contexts/ColmenaAgent1/company_premises"
 		logs.GetLogger().Debug(pathLOG + "[checkSLA] context: " + context)
 

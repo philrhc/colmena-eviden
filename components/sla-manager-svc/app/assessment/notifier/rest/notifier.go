@@ -122,11 +122,11 @@ func (not _notifier) NotifyViolations(qos *model.SLA, result *amodel.Result) {
 		SLAId:     qos.Id,
 		Kpis: []model.OutputSLAKpi{
 			{
-				RoleId:          qos.Id,
-				Query:           qos.Details.Guarantees[0].Query,
+				RoleId:          qos.Details.Guarantees[0].Name,
+				Query:           qos.Details.Guarantees[0].Constraint,
 				Value:           vs[0].Values[0].Value,
 				Level:           qos.Assessment.Level,
-				Threshold:       "", //qos.Details.Guarantees[0].Query,
+				Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
 				Violations:      vs,
 				TotalViolations: qos.Assessment.TotalViolations,
 			},
@@ -152,16 +152,41 @@ func (not _notifier) NotifyViolations(qos *model.SLA, result *amodel.Result) {
 
 /* Implements notifier.NotifyStatus */
 func (not _notifier) NotifyStatus(qos *model.SLA, result *amodel.Result) {
+	var res interface{} = result.LastValues
+	//logs.GetLogger().Debugf(pathLOG+" Value (1): ", res)
+
+	if len(result.LastValues) > 0 {
+		for key := range result.LastValues {
+			//logs.GetLogger().Debugf(pathLOG+" key: ", key)
+			if len(result.LastValues[key]) > 0 {
+				for key2 := range result.LastValues[key] {
+					//logs.GetLogger().Debugf(pathLOG+" key2: ", key2)
+					if len(key2) > 0 {
+						r, ok := result.LastValues[key][key2].Value.(float64)
+						if !ok {
+							logs.GetLogger().Error(pathLOG + " Value is not a number")
+						} else {
+							res = r
+						}
+						//logs.GetLogger().Debugf(pathLOG + " break")
+						break
+					}
+				}
+			}
+		}
+	}
+	//logs.GetLogger().Debugf(pathLOG+"Value (2): ", res)
+
 	info := model.OutputSLA{
 		ServiceId: qos.Name,
 		SLAId:     qos.Id,
 		Kpis: []model.OutputSLAKpi{
 			{
-				RoleId:          qos.Id,
-				Query:           qos.Details.Guarantees[0].Query,
-				Value:           result.LastValues,
+				RoleId:          qos.Details.Guarantees[0].Name,
+				Query:           qos.Details.Guarantees[0].Constraint,
+				Value:           res, //result.LastValues,
 				Level:           qos.Assessment.Level,
-				Threshold:       "", //qos.Details.Guarantees[0].Query,
+				Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
 				TotalViolations: qos.Assessment.TotalViolations,
 			},
 		},

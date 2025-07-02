@@ -78,41 +78,41 @@ func AssessActiveQoSDefinitions(cfg Config) {
 			// iterate SLA evaluation results
 			for _, qosdefs2 := range grouped_qosdefs {
 				if len(qosdefs2) > 0 {
-					logs.GetLogger().Infof(pathLOG + "[AssessActiveQoSDefinitions] Evaluating service [" + qosdefs2[0].Name + "]")
+					logs.GetLogger().Infof(pathLOG + "[AssessActiveQoSDefinitions] => Evaluating service [" + qosdefs2[0].Name + "]")
 
 					for _, qosd := range qosdefs2 {
 						if qosd.State != model.STARTED {
-							logs.GetLogger().Error(pathLOG + "[AssessActiveQoSDefinitions] SLA not started")
+							logs.GetLogger().Warn(pathLOG + "[AssessActiveQoSDefinitions] SLA with ID " + qosd.Id + " has the status " + string(qosd.State))
 						} else {
 							// do QoS assessment
-							logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] SLA Assessment ", qosd.Id)
+							logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] ===> SLA Assessment ", qosd.Id)
 
 							result, totalResults := AssessQoS(&qosd, cfg)
 							qosd.Assessment.TotalExecutions += 1
 
 							// violation?
 							violation := not != nil && len(result.Violated) > 0
-
 							if violation {
 								qosd.Assessment.TotalViolations += 1
 								qosd.Assessment.Violated = true
-
-								violation_result := GenerateViolationOutput(qosd, result)
-								if violation_result.ServiceId != "" {
-									violations = append(violations, violation_result)
-								}
 
 							} else {
 								qosd.Assessment.Violated = false
 							}
 
 							// check and set violation levels
-							checkViolationLevel(&qosd, totalResults)
+							//logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] SLA Assessment LEVEL ", qosd.Assessment.Level)
+							checkViolationLevel(&qosd, totalResults, result)
+							//logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] SLA Assessment LEVEL ", qosd.Assessment.Level)
 
 							// notify violations or status
 							if violation {
-								//not.NotifyViolations(&qosd, &result)
+								violation_result := GenerateViolationOutput(qosd, result)
+								if violation_result.ServiceId != "" {
+									violations = append(violations, violation_result)
+								}
 							} else {
+								//logs.GetLogger().Debug(pathLOG+"[AssessActiveQoSDefinitions] SLA Assessment LEVEL ", qosd.Assessment.Level)
 								not.NotifyStatus(&qosd, &result)
 							}
 

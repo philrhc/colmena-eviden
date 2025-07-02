@@ -20,7 +20,6 @@ package expressions
 import (
 	"colmena/sla-management-svc/app/common/logs"
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -58,35 +57,35 @@ func getContraintParts(expr string) ([]string, error) {
 Insert mark for labels before time interval
 */
 func setLabelsMark(metrics_query string) (string, error) {
-	fmt.Println(metrics_query)
+	logs.GetLogger().Debug(pathLOG + "[setLabelsMark] " + metrics_query)
 	posBracketIni := strings.Index(metrics_query, "[")
 
 	totalInitBrackets := countOccurrences(metrics_query, '[')
 	if posBracketIni > 0 && totalInitBrackets == 1 {
-		// "avg_over_time(processing_time[5s])"
-		logs.GetLogger().Debug(pathLOG + "==> periodo de tiempo")
+		// ej. "avg_over_time(processing_time[5s])"
+		logs.GetLogger().Debug(pathLOG + "[setLabelsMark] case 1")
 		return "[" + strings.Replace(metrics_query, "[", LABEL_MARK+"[", 1) + "]", nil
 	} else if posBracketIni == 0 && totalInitBrackets == 1 {
-		// "[go_memstats_frees_total]"
-		logs.GetLogger().Debug(pathLOG + "==> formato ok, sin periodo de tiempo")
+		// ej. "[go_memstats_frees_total]"
+		logs.GetLogger().Debug(pathLOG + "[setLabelsMark] case 2")
 		return strings.Replace(metrics_query, "]", LABEL_MARK+"]", 1), nil
 	} else if posBracketIni == 0 && totalInitBrackets == 2 && strings.HasSuffix(metrics_query, "]") {
-		// "[avg_over_time(processing_time[5s])]"
-		logs.GetLogger().Debug(pathLOG + "==> formato ok. Buscar periodod de tiempo")
+		// ej. "[avg_over_time(processing_time[5s])]"
+		logs.GetLogger().Debug(pathLOG + "[setLabelsMark] case 3")
 		return "[" + strings.Replace(metrics_query[1:], "[", LABEL_MARK+"[", 1), nil
 	} else if posBracketIni < 0 {
-		// No '[', ']'
-		// buscamos ')'
+		// ej. No '[', ']' ==>  ')'
 		posParenthEnd := strings.Index(metrics_query, ")")
 		if posParenthEnd > 0 {
-			logs.GetLogger().Debug(pathLOG + "==> formato ok, sin brackets")
+			logs.GetLogger().Debug(pathLOG + "[setLabelsMark] case 4: " + "[" + strings.Replace(metrics_query, ")", LABEL_MARK+")", 1))
 			return "[" + strings.Replace(metrics_query, ")", LABEL_MARK+")", 1), nil
 		} else {
-			logs.GetLogger().Debug(pathLOG + "==> formato ok, sin brackets")
+			logs.GetLogger().Debug(pathLOG + "[setLabelsMark] case 5: " + "[" + metrics_query + LABEL_MARK + "]")
 			return "[" + metrics_query + LABEL_MARK + "]", nil
 		}
 	}
 
+	logs.GetLogger().Error(pathLOG + "no valid expression")
 	return "", errors.New("not valid 'metrics_query' expression. Expression format: '[<expression>]' or '<expression>[interval]' or <expression> ")
 }
 
@@ -110,7 +109,7 @@ Objective:
 	to "[avg_over_time(processing_time#LABELS#[5s])] < 1"
 	where #LABELS# will be repalced by {building='BSC'}
 */
-func CheckAndParseConstraint(constraint string) (string, error) {
+func CheckAndParseConstraint(constraint string) (string, string, error) {
 	logs.GetLogger().Debug(pathLOG + "[CheckAndParseConstraint] Checking expression: " + constraint)
 	res, err := getContraintParts(constraint)
 	if err != nil {
@@ -122,11 +121,11 @@ func CheckAndParseConstraint(constraint string) (string, error) {
 			logs.GetLogger().Error(pathLOG+"[CheckAndParseConstraint] ", err)
 		} else {
 			logs.GetLogger().Debug(pathLOG + "[CheckAndParseConstraint] " + res2)
-			return res2 + " " + res[1] + " " + res[2], nil
+			return res2 + " " + res[1] + " " + res[2], res[2], nil
 		}
 	}
 
-	return "", err
+	return "", "", err
 }
 
 /*
