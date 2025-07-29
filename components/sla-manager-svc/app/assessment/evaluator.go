@@ -72,7 +72,7 @@ func AssessActiveQoSDefinitions(cfg Config) {
 		grouped_qosdefs, err := groupSLAsByServiceId(qosdefs, repo)
 		if err == nil {
 
-			var violations []model.OutputSLA // list of all violations
+			var violations []model.ColmenaOutputSLA // list of all violations
 			var statuses []model.OutputSLA   // list of all violations
 
 			// iterate SLA evaluation results

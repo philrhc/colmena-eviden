@@ -20,14 +20,15 @@ package assessment
 
 import (
 	amodel "colmena/sla-management-svc/app/assessment/model"
+	"colmena/sla-management-svc/app/common/logs"
 	"colmena/sla-management-svc/app/model"
 )
 
-func GenerateViolationOutput(qos model.SLA, result amodel.Result) model.OutputSLA {
+func GenerateViolationOutput(qos model.SLA, result amodel.Result) model.ColmenaOutputSLA {
 
 	vs := result.GetViolations()
 	if len(vs) == 0 {
-		return model.OutputSLA{}
+		return model.ColmenaOutputSLA{}
 	}
 
 	/*
@@ -48,20 +49,10 @@ func GenerateViolationOutput(qos model.SLA, result amodel.Result) model.OutputSL
 			]
 		}
 	*/
-	output := model.OutputSLA{
-		ServiceId: qos.Name,
-		SLAId:     qos.Id,
-		Kpis: []model.OutputSLAKpi{
-			{
-				RoleId:          qos.Id,
-				Query:           qos.Details.Guarantees[0].Query,
-				Value:           vs[0].Values[0].Value,
-				Level:           qos.Assessment.Level,
-				Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
-				Violations:      vs,
-				TotalViolations: qos.Assessment.TotalViolations,
-			},
-		},
+	output, err := model.SLAModelToColmenaOutputSLA(qos)
+	if err != nil {
+		logs.GetLogger().Error("Error generating violation output: ", err)
+		return model.ColmenaOutputSLA{}
 	}
 
 	return output

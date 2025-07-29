@@ -108,6 +108,21 @@ Output model (SLA VIOLATION) example:
 		]
 	}
 */
+
+type ColmenaOutputSLA struct {
+	ServiceId string         `json:"serviceId"`
+	Kpis      []ColmenaOutputKpis `json:"KPIs"`
+}
+
+type ColmenaOutputKpis struct {
+	RoleId 			string `json:"roleId"`
+	Query 			string `json:"query"`
+	Level           string      `json:"level"`
+	Value 			interface{} `json:"value"`
+	Threshold       float64     `json:"threshold"`
+}
+
+
 type OutputSLA struct {
 	ServiceId string         `json:"serviceId"`
 	SLAId     string         `json:"slaId"`

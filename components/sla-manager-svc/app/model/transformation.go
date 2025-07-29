@@ -33,6 +33,56 @@ import (
 /**
  * Transforms an SLA Model to a OutputSLA model
  */
+func SLAModelToColmenaOutputSLA(qos SLA) (ColmenaOutputSLA, error) {
+	res := float64(-1)
+	updated := false
+
+	if qos.Assessment.Level != ASSESSMENT_LEVEL_NORESULTS && len(qos.Assessment.Guarantees) > 0 {
+		for key := range qos.Assessment.Guarantees {
+			//res = qos.Assessment.Guarantees[key].LastValues
+
+			if len(qos.Assessment.Guarantees[key].LastValues) > 0 {
+				for key2 := range qos.Assessment.Guarantees[key].LastValues {
+					if len(key2) > 0 {
+						r, ok := qos.Assessment.Guarantees[key].LastValues[key2].Value.(float64)
+						if !ok {
+							logs.GetLogger().Error(" Value is not a number")
+						} else {
+							updated = true
+							res = r
+						}
+						//logs.GetLogger().Debugf(pathLOG + " break")
+						break
+					}
+				}
+			}
+
+		}
+	}
+
+	kpis := []ColmenaOutputKpis{}
+
+	if updated {
+		kpis = append(kpis, ColmenaOutputKpis{
+			RoleId:          qos.Details.Guarantees[0].Name,
+			Query:           qos.Details.Guarantees[0].OQuery,
+			Value:           res, //0, // TODO res, //result.LastValues,
+			Level:           qos.Assessment.Level,
+			Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
+		})
+	}
+
+	output_model := ColmenaOutputSLA{
+		ServiceId: qos.Name,
+		Kpis: kpis,
+	}
+
+	return output_model, nil
+}
+
+/**
+ * Transforms an SLA Model to a OutputSLA model
+ */
 func SLAModelToOutputSLA(qos SLA) (OutputSLA, error) {
 	res := float64(-1)
 
@@ -84,6 +134,24 @@ func SLAModelsToOutputSLAs(l SLAs) ([]OutputSLA, error) {
 
 	for _, m := range l {
 		mout, err := SLAModelToOutputSLA(m)
+		if err == nil {
+			lout = append(lout, mout)
+		} else {
+			return lout, err
+		}
+	}
+
+	return lout, nil
+}
+
+/**
+ * Transforms a list of SLA Models to a list of OutputSLA models
+ */
+func SLAModelsToColmenaOutputSLAs(l SLAs) ([]ColmenaOutputSLA, error) {
+	var lout []ColmenaOutputSLA
+
+	for _, m := range l {
+		mout, err := SLAModelToColmenaOutputSLA(m)
 		if err == nil {
 			lout = append(lout, mout)
 		} else {

@@ -70,7 +70,7 @@ func (n LogNotifier) NotifyStatus(qos *model.SLA, result *assessment_model.Resul
 }
 
 /* Implements notifier.NotifyAllViolations */
-func (n LogNotifier) NotifyAllViolations(results []model.OutputSLA) {
+func (n LogNotifier) NotifyAllViolations(results []model.ColmenaOutputSLA) {
 	logs.GetLogger().Warn(pathLOG + "Function not implemented")
 }
 

@@ -25,7 +25,7 @@ import (
 type ViolationNotifier interface {
 	NotifyViolations(agreement *model.SLA, result *assessment_model.Result)
 
-	NotifyAllViolations(results []model.OutputSLA)
+	NotifyAllViolations(results []model.ColmenaOutputSLA)
 
 	NotifyStatus(agreement *model.SLA, result *assessment_model.Result)
 

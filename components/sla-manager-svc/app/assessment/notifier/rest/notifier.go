@@ -68,7 +68,7 @@ func logConfig(config *viper.Viper) {
 }
 
 /* Implements notifier.NotifyAllViolations */
-func (not _notifier) NotifyAllViolations(results []model.OutputSLA) {
+func (not _notifier) NotifyAllViolations(results []model.ColmenaOutputSLA) {
 	out, err1 := json.Marshal(results)
 	if err1 == nil {
 		logs.GetLogger().Infof("VIOLATIONs: " + string(out))
@@ -152,44 +152,10 @@ func (not _notifier) NotifyViolations(qos *model.SLA, result *amodel.Result) {
 
 /* Implements notifier.NotifyStatus */
 func (not _notifier) NotifyStatus(qos *model.SLA, result *amodel.Result) {
-	var res interface{} = result.LastValues
-	//logs.GetLogger().Debugf(pathLOG+" Value (1): ", res)
-
-	if len(result.LastValues) > 0 {
-		for key := range result.LastValues {
-			//logs.GetLogger().Debugf(pathLOG+" key: ", key)
-			if len(result.LastValues[key]) > 0 {
-				for key2 := range result.LastValues[key] {
-					//logs.GetLogger().Debugf(pathLOG+" key2: ", key2)
-					if len(key2) > 0 {
-						r, ok := result.LastValues[key][key2].Value.(float64)
-						if !ok {
-							logs.GetLogger().Error(pathLOG + " Value is not a number")
-						} else {
-							res = r
-						}
-						//logs.GetLogger().Debugf(pathLOG + " break")
-						break
-					}
-				}
-			}
-		}
-	}
-	//logs.GetLogger().Debugf(pathLOG+"Value (2): ", res)
-
-	info := model.OutputSLA{
-		ServiceId: qos.Name,
-		SLAId:     qos.Id,
-		Kpis: []model.OutputSLAKpi{
-			{
-				RoleId:          qos.Details.Guarantees[0].Name,
-				Query:           qos.Details.Guarantees[0].Constraint,
-				Value:           res, //result.LastValues,
-				Level:           qos.Assessment.Level,
-				Threshold:       qos.Assessment.Threshold, //qos.Details.Guarantees[0].Query,
-				TotalViolations: qos.Assessment.TotalViolations,
-			},
-		},
+	info, err := model.SLAModelToColmenaOutputSLA(*qos)
+	if err != nil {
+		logs.GetLogger().Error("Error generating status output: ", err)
+		return
 	}
 
 	out, err1 := json.Marshal(info)
@@ -200,7 +166,7 @@ func (not _notifier) NotifyStatus(qos *model.SLA, result *amodel.Result) {
 	b := new(bytes.Buffer)
 	json.NewEncoder(b).Encode(info)
 
-	_, err := http.Post(not.url, "application/json; charset=utf-8", b)
+	_, err = http.Post(not.url, "application/json; charset=utf-8", b)
 
 	if err != nil {
 		logs.GetLogger().Error(pathLOG + "RestNotifier error: " + err.Error())
