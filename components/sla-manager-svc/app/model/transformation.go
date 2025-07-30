@@ -37,28 +37,28 @@ func SLAModelToColmenaOutputSLA(qos SLA) (ColmenaOutputSLA, error) {
 	res := float64(-1)
 	updated := false
 
-	if qos.Assessment.Level != ASSESSMENT_LEVEL_NORESULTS && len(qos.Assessment.Guarantees) > 0 {
-		for key := range qos.Assessment.Guarantees {
-			//res = qos.Assessment.Guarantees[key].LastValues
+	//if qos.Assessment.Level != ASSESSMENT_LEVEL_NORESULTS && len(qos.Assessment.Guarantees) > 0 {
+	for key := range qos.Assessment.Guarantees {
+		//res = qos.Assessment.Guarantees[key].LastValues
 
-			if len(qos.Assessment.Guarantees[key].LastValues) > 0 {
-				for key2 := range qos.Assessment.Guarantees[key].LastValues {
-					if len(key2) > 0 {
-						r, ok := qos.Assessment.Guarantees[key].LastValues[key2].Value.(float64)
-						if !ok {
-							logs.GetLogger().Error(" Value is not a number")
-						} else {
-							updated = true
-							res = r
-						}
-						//logs.GetLogger().Debugf(pathLOG + " break")
-						break
+		if len(qos.Assessment.Guarantees[key].LastValues) > 0 {
+			for key2 := range qos.Assessment.Guarantees[key].LastValues {
+				if len(key2) > 0 {
+					r, ok := qos.Assessment.Guarantees[key].LastValues[key2].Value.(float64)
+					if !ok {
+						logs.GetLogger().Error(" Value is not a number")
+					} else {
+						updated = true
+						res = r
 					}
+					//logs.GetLogger().Debugf(pathLOG + " break")
+					break
 				}
 			}
-
 		}
+
 	}
+	//}
 
 	kpis := []ColmenaOutputKpis{}
 
